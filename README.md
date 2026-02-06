@@ -28,6 +28,16 @@ npx skills add clssck/rsconnect-skill -a claude-code
 npx skills add clssck/rsconnect-skill -a codex
 ```
 
+## Update
+
+```bash
+# Check for available updates
+npx skills check
+
+# Update to latest version
+npx skills update
+```
+
 ### Manual Installation
 
 Copy the skill into your agent's skills directory:
