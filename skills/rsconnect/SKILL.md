@@ -1,16 +1,13 @@
 ---
 name: rsconnect
 description: Posit Connect and rsconnect deployment workflows. Use for deploying/publishing to Connect, deployment errors, git-backed content, R version upgrades, regenerating manifest.json, fixing renv/renv.lock issues, resolving Source unknown errors, package restore failures, bundle errors, writeManifest problems.
-argument-hint: "[error-message] or [package-name]"
 license: MIT
+compatibility: Requires R, renv package, and rsconnect package (>= 0.8.15 for Git-backed deployment)
+allowed-tools: Bash Read
 metadata:
   author: clssck
   version: "1.0.0"
-  tags:
-    - r
-    - posit-connect
-    - renv
-    - deployment
+  tags: "r, posit-connect, renv, deployment"
 ---
 
 # Posit Connect Deployment Guide
