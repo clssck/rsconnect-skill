@@ -2,6 +2,8 @@
 
 ## Diagnosing issues
 
+### R Projects
+
 ```r
 # Full renv diagnostics (cache, repos, settings)
 renv::diagnostics()
@@ -18,11 +20,21 @@ Or use the helper script:
 Rscript $SKILL_DIR/scripts/diagnose.R --verbose
 ```
 
+### Python Projects
+
+```bash
+# Full Python diagnostics
+python $SKILL_DIR/scripts/diagnose_py.py --verbose
+
+# Pre-deploy check
+python $SKILL_DIR/scripts/pre_deploy_check_py.py
+```
+
 ---
 
 ## `Source: unknown` in renv.lock
 
-This is the **most common deployment blocker**. Connect can't restore packages without a known source.
+This is the **most common R deployment blocker**. Connect can't restore packages without a known source.
 
 **Error messages:**
 - `Unable to determine package source for [source] package`
@@ -50,7 +62,7 @@ grep '"Source": "unknown"' renv.lock  # Should return nothing
 
 ---
 
-## Common restore/build errors
+## Common restore/build errors (R)
 
 ### `Failed to retrieve package sources for X from CRAN`
 **Cause:** Package archived on CRAN, version not available, or repo mismatch.
@@ -145,6 +157,120 @@ renv::snapshot()
 
 ---
 
+## Python Deployment Issues
+
+### Hash errors with `uv export`
+
+**Error:** `rsconnect write-manifest` fails because requirements.txt contains hash digests.
+
+**Cause:** `uv export` includes `--hash` digests by default. Connect's package installer doesn't support hash-checking mode.
+
+**Fix:**
+```bash
+uv export --no-hashes -o requirements.txt
+```
+
+Or use the helper script which handles this automatically:
+```bash
+python $SKILL_DIR/scripts/regenerate_manifest_py.py
+```
+
+### Python version mismatch
+
+**Error:** Deployment fails with Python version errors, or app behaves differently on Connect.
+
+**Cause:** The Python major.minor version in `manifest.json` doesn't match what's available on Connect.
+
+**Diagnosis:**
+```bash
+python $SKILL_DIR/scripts/diagnose_py.py
+```
+
+**Fix:**
+1. Check which Python versions are installed on Connect (ask your admin)
+2. Update your `.python-version` file to match
+3. Run `uv sync` to recreate the environment
+4. Regenerate: `python $SKILL_DIR/scripts/regenerate_manifest_py.py`
+
+### Missing packages in requirements.txt
+
+**Error:** App fails on Connect with `ModuleNotFoundError`.
+
+**Cause:** `requirements.txt` is stale or doesn't include all dependencies.
+
+**Fix:**
+```bash
+# Regenerate from uv lockfile
+uv export --no-hashes -o requirements.txt
+
+# Verify the package is listed
+grep "package-name" requirements.txt
+
+# Regenerate manifest
+python $SKILL_DIR/scripts/regenerate_manifest_py.py
+```
+
+### `allow_uv` not set in manifest
+
+**Symptom:** Connect installs packages slowly using pip instead of uv.
+
+**Cause:** `manifest.json` doesn't include `python.package_manager.allow_uv: true`. Connect 2024.12.0+ supports `uv pip` for faster installs.
+
+**Fix:**
+```bash
+# Regenerate manifest (patches allow_uv automatically)
+python $SKILL_DIR/scripts/regenerate_manifest_py.py
+
+# Or manually patch:
+python -c "
+import json
+m = json.load(open('manifest.json'))
+m.setdefault('python', {}).setdefault('package_manager', {})['allow_uv'] = True
+json.dump(m, open('manifest.json', 'w'), indent=2)
+"
+```
+
+### Entrypoint not found
+
+**Error:** `Application entrypoint not found` or `No module named 'app'`.
+
+**Cause:** Connect expects a specific entrypoint (e.g., `app:app` for Flask/FastAPI). The default file must exist and export the app object.
+
+**Common entrypoints:**
+
+| Framework | Expected File | Expected Object |
+|-----------|--------------|-----------------|
+| FastAPI | `app.py` or `main.py` | `app = FastAPI()` |
+| Flask | `app.py` | `app = Flask(__name__)` |
+| Dash | `app.py` | `app = Dash(__name__)` |
+| Streamlit | `app.py` | N/A (runs as script) |
+
+**Fix:**
+1. Ensure your entrypoint file exists (usually `app.py` or `main.py`)
+2. Check `metadata.entrypoint` in `manifest.json` matches your file
+3. Regenerate manifest with correct type:
+   ```bash
+   python $SKILL_DIR/scripts/regenerate_manifest_py.py --type fastapi
+   ```
+
+### SSL/certificate errors with rsconnect-python
+
+**Error:** `SSL: CERTIFICATE_VERIFY_FAILED` or similar TLS errors.
+
+**Cause:** Corporate proxy, self-signed certificate on Connect server, or missing CA bundle.
+
+**Fix:**
+```bash
+# Option 1: Point to your CA bundle
+export REQUESTS_CA_BUNDLE=/path/to/ca-bundle.crt
+rsconnect write-manifest api .
+
+# Option 2: Disable verification (NOT recommended for production)
+rsconnect write-manifest api . --insecure
+```
+
+---
+
 ## Log interpretation
 
 | Log message | Meaning | Action |
@@ -156,6 +282,9 @@ renv::snapshot()
 | `curl: (22) ... 404` | Package version not in repo | Use RSPM snapshot |
 | `unable to access index for repository` | Repo URL unreachable | Check Connect repo config |
 | `requested R version X but using Y` | R version mismatch | Install matching R or regenerate |
+| `ModuleNotFoundError` | Python package missing | Update requirements.txt + regenerate manifest |
+| `Application entrypoint not found` | Wrong entrypoint config | Check manifest.json metadata.entrypoint |
+| `No matching distribution found` | Python package version unavailable | Update requirements.txt |
 
 ---
 
@@ -167,9 +296,14 @@ renv::snapshot()
 
 ## Getting help
 
-Before opening a support ticket, run:
+Before opening a support ticket, run the appropriate diagnostic:
+
 ```bash
+# R projects
 Rscript $SKILL_DIR/scripts/diagnose.R --verbose > diagnostics.txt 2>&1
+
+# Python projects
+python $SKILL_DIR/scripts/diagnose_py.py --verbose > diagnostics.txt 2>&1
 ```
 
-This captures environment info, package versions, and renv status useful for debugging.
+This captures environment info, package versions, and deployment status useful for debugging.

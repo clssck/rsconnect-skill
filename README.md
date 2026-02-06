@@ -1,9 +1,10 @@
 # rsconnect-skill
 
-Agent skill for Posit Connect and rsconnect deployment workflows.
+Agent skill for Posit Connect deployment workflows — **R and Python**.
 
 Handles Git-backed deployment, manifest management, renv lockfile issues,
-Source:unknown errors, R version upgrades, and pre-commit validation.
+Source:unknown errors, R version upgrades, pre-commit validation,
+Python/uv deployments, FastAPI/Flask/Dash/Streamlit apps, and requirements.txt management.
 
 ## Supported Agents
 
@@ -63,12 +64,13 @@ Where `<agent-skills-dir>` is your agent's skills directory (e.g., `.cursor/skil
 ### Skill (SKILL.md)
 
 Provides the agent with:
-- Dynamic project status (R version, rsconnect version, Source:unknown count)
+- Language detection (R vs Python) as first triage step
+- Dynamic project status (versions, manifest status, dependency health)
 - Deployment method guidance (Git-backed, IDE, CLI, Jupyter, command line)
-- Common workflow recipes (deploy, fix errors, rollback, R upgrade)
+- Common workflow recipes (deploy, fix errors, rollback, version upgrade)
 - Branch strategy recommendations (deploy branch, multi-environment)
 
-### Helper Scripts
+### Helper Scripts — R
 
 | Script | Purpose | Flags |
 |--------|---------|-------|
@@ -78,16 +80,31 @@ Provides the agent with:
 | `regenerate_manifest.R` | Regenerate manifest.json | |
 | `precommit_check.R` | Git pre-commit hook validation | |
 
-Scripts share a common utility library (`scripts/lib/parse_utils.R`) for consistent output formatting and renv.lock parsing. Scripts auto-detect their install location at runtime — no hardcoded paths.
+R scripts share a common utility library (`scripts/lib/parse_utils.R`) for consistent output formatting and renv.lock parsing.
+
+### Helper Scripts — Python
+
+| Script | Purpose | Flags |
+|--------|---------|-------|
+| `pre_deploy_check_py.py` | Validate Python deployment readiness (7 checks) | |
+| `diagnose_py.py` | Full Python diagnostics report | `--verbose`, `--help` |
+| `regenerate_manifest_py.py` | Regenerate manifest for Python apps | `--type`, `--no-uv-export`, `--no-allow-uv` |
+
+Python scripts share a common utility library (`scripts/lib/py_utils.py`) for consistent output formatting and manifest parsing. They use only Python stdlib — no pip install needed.
+
+Scripts auto-detect their install location at runtime — no hardcoded paths.
 
 ```bash
-# Run from project root (replace $SKILL_DIR with your actual skill path)
+# R scripts — run from project root (replace $SKILL_DIR with your actual skill path)
 Rscript $SKILL_DIR/scripts/<script>.R
+
+# Python scripts — run from project root
+python $SKILL_DIR/scripts/<script>.py
 ```
 
 ### Pre-commit Hook
 
-Validates deployment files before each commit:
+Validates R deployment files before each commit:
 
 ```bash
 # Replace $SKILL_DIR with your actual skill path
@@ -102,28 +119,40 @@ chmod +x .git/hooks/pre-commit
 
 | File | Content |
 |------|---------|
-| `references/commands.md` | Quick command reference |
-| `references/troubleshooting.md` | Common errors, rsconnect 1.6.0+ changes, bundle limits, R migrations |
+| `references/commands.md` | Quick command reference (R and Python) |
+| `references/troubleshooting.md` | Common errors, bundle limits, R migrations, Python deployment issues |
 
 ## Requirements
 
+### R Content
 - R (any recent version)
 - `renv` package
 - `rsconnect` package (>= 0.8.15 for Git-backed deployment)
 
+### Python Content
+- Python 3.10+
+- `uv` (package manager)
+- `rsconnect-python` (or use via `uvx`)
+
 ## Trigger Keywords
 
 The skill activates when the agent detects these topics:
-deploy, publish, Connect, rsconnect, manifest.json, renv.lock,
+
+**R:** deploy, publish, Connect, rsconnect, manifest.json, renv.lock,
 Source unknown, package restore, bundle error, writeManifest,
 R version upgrade, git-backed content
+
+**Python:** deploy, publish, Connect, FastAPI, Flask, Dash, Streamlit,
+uv, requirements.txt, rsconnect-python, manifest.json, Python version,
+allow_uv, python-api, git-backed content
 
 ## Compatibility
 
 | Feature | Support |
 |---------|---------|
 | Basic skill (SKILL.md) | All agents |
-| Helper scripts (R) | All agents (requires R) |
+| R helper scripts | All agents (requires R) |
+| Python helper scripts | All agents (requires Python 3.10+) |
 | Path resolution | Agent-agnostic (`$SKILL_DIR` convention) |
 | Pre-commit hook | Any Git workflow |
 

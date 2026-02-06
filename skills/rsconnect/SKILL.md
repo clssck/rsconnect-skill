@@ -1,17 +1,43 @@
 ---
 name: rsconnect
-description: Posit Connect and rsconnect deployment workflows. Use for deploying/publishing to Connect, deployment errors, git-backed content, R version upgrades, regenerating manifest.json, fixing renv/renv.lock issues, resolving Source unknown errors, package restore failures, bundle errors, writeManifest problems. Requires R, renv package, and rsconnect package (>= 0.8.15 for Git-backed deployment).
+description: Posit Connect deployment workflows for R and Python. Use for deploying/publishing to Connect, deployment errors, git-backed content, R version upgrades, regenerating manifest.json, fixing renv/renv.lock issues, resolving Source unknown errors, package restore failures, bundle errors, writeManifest problems, FastAPI, Flask, uv, requirements.txt, Python version, rsconnect-python, python-api, python-fastapi, dash, streamlit. Requires R + renv + rsconnect (>= 0.8.15) for R content, or Python + uv + rsconnect-python for Python content.
 license: MIT
 metadata:
   author: clssck
-  version: "1.0.0"
+  version: "2.0.0"
 ---
 
 # Posit Connect Deployment Guide
 
 In commands below, `$SKILL_DIR` means the directory containing this file. Replace it with the actual path when executing (e.g., `.claude/skills/rsconnect`, `.cursor/skills/rsconnect`).
 
-## Quick Start (First-Time Deploy)
+## Before Proceeding
+
+**Ask the user if not clear from context:**
+
+1. **Is this R or Python content?**
+   - **R** — Uses renv.lock, rsconnect R package → see [R sections](#quick-start-r) below
+   - **Python** — Uses requirements.txt, uv, rsconnect-python → see [Python sections](#quick-start-python-uv) below
+
+2. **How is this app deployed to Connect?**
+   - **Git-backed** — Connect pulls from Git automatically (needs `manifest.json`) - *simplest for teams*
+   - **RStudio IDE** — Click "Publish" button in IDE (R only)
+   - **R console** — `rsconnect::deployApp()` (R only)
+   - **Jupyter** — Publish from notebook interface
+   - **Command line** — `rsconnect deploy manifest`
+   - **Not sure** — Check Connect UI → Content → Your App → Info tab (shows deployment source)
+
+3. **If Git-backed, what branch does Connect watch?**
+   - Check Connect UI → Content → Your App → Info → "Git Repository" section
+   - **Recommendation:** Use a dedicated deploy branch (e.g., `deploy`, `production`) so you control when changes go live
+
+> Note: **This skill focuses on Git-backed deployment** (the default for this project). For push-button methods, the main difference is you don't need `manifest.json` — rsconnect generates the bundle on-the-fly.
+
+---
+
+# R Deployment
+
+## Quick Start (R)
 
 ```bash
 # 1. Check if ready to deploy
@@ -24,7 +50,7 @@ git add manifest.json renv.lock && git commit -m "chore: update manifest"
 git push
 ```
 
-## First Step: Gather Project Status
+## First Step: Gather R Project Status
 
 Before doing anything else, run the pre-deploy check to understand the current state:
 
@@ -36,27 +62,7 @@ This reports: R version, rsconnect version, manifest status, Source:unknown coun
 
 ---
 
-## Before Proceeding
-
-**Ask the user if not clear from context:**
-
-1. **How is this app deployed to Connect?**
-   - **Git-backed** — Connect pulls from Git automatically (needs `manifest.json`) - *simplest for teams*
-   - **RStudio IDE** — Click "Publish" button in IDE
-   - **R console** — `rsconnect::deployApp()`
-   - **Jupyter** — Publish from notebook interface
-   - **Command line** — `rsconnect deploy manifest`
-   - **Not sure** — Check Connect UI → Content → Your App → Info tab (shows deployment source)
-
-2. **If Git-backed, what branch does Connect watch?**
-   - Check Connect UI → Content → Your App → Info → "Git Repository" section
-   - **Recommendation:** Use a dedicated deploy branch (e.g., `deploy`, `production`) so you control when changes go live
-
-> Note: **This skill focuses on Git-backed deployment** (the default for this project). For push-button methods, the main difference is you don't need `manifest.json` — rsconnect generates the bundle on-the-fly.
-
----
-
-## Key Concepts
+## R Key Concepts
 
 ### renv.lock vs manifest.json
 
@@ -81,7 +87,7 @@ Connect needs to know WHERE to download each package. `Source: unknown` means Co
 
 ---
 
-## Helper Scripts
+## R Helper Scripts
 
 | Script | Purpose | Flags |
 |--------|---------|-------|
@@ -118,9 +124,9 @@ To bypass (not recommended): `git commit --no-verify`
 
 ---
 
-## Common Workflows
+## R Common Workflows
 
-### Deploy After Code Changes
+### Deploy After Code Changes (R)
 
 ```bash
 renv::snapshot()  # If dependencies changed
@@ -175,21 +181,162 @@ See [references/troubleshooting.md](references/troubleshooting.md) for detailed 
 
 ---
 
+# Python Deployment (uv)
+
+## Quick Start (Python / uv)
+
+```bash
+# 1. Check if ready to deploy
+python $SKILL_DIR/scripts/pre_deploy_check_py.py
+
+# 2. Fix any issues reported, then commit
+git add manifest.json requirements.txt && git commit -m "chore: update manifest"
+
+# 3. Push (Connect auto-deploys from Git)
+git push
+```
+
+## First Step: Gather Python Project Status
+
+Before doing anything else, run the Python pre-deploy check:
+
+```bash
+python $SKILL_DIR/scripts/pre_deploy_check_py.py
+```
+
+This reports: Python version, uv/rsconnect status, manifest status, requirements.txt sync, and allow_uv setting. Use the output to inform your response.
+
+---
+
+## Python Key Concepts
+
+### requirements.txt vs manifest.json
+
+| File | Purpose | When to Update |
+|------|---------|----------------|
+| `requirements.txt` | Records YOUR Python package versions | After `uv add` or `uv remove` |
+| `manifest.json` | Tells Connect what to install | After changing requirements.txt or app files |
+
+**They can drift!** Always update both together:
+```bash
+uv export --no-hashes -o requirements.txt  # Update requirements.txt
+rsconnect write-manifest <type> .           # Update manifest.json
+```
+
+### uv Workflow
+
+[uv](https://docs.astral.sh/uv/) is a fast Python package manager. Key commands:
+
+| Action | Command |
+|--------|---------|
+| Add a package | `uv add <pkg>` |
+| Remove a package | `uv remove <pkg>` |
+| Sync environment | `uv sync` |
+| Export for Connect | `uv export --no-hashes -o requirements.txt` |
+| Run a tool | `uvx <tool>` (e.g., `uvx rsconnect-python`) |
+
+### What is `allow_uv`?
+
+As of Connect 2024.12.0, Connect can use `uv pip` instead of `pip` for faster Python package installs. Setting `allow_uv: true` in manifest.json's `python.package_manager` section opts in.
+
+The `regenerate_manifest_py.py` script patches this automatically. Currently `rsconnect-python` CLI doesn't have a flag for it — the script patches `manifest.json` after generation.
+
+---
+
+## Python Helper Scripts
+
+| Script | Purpose | Flags |
+|--------|---------|-------|
+| `pre_deploy_check_py.py` | Validate Python deployment readiness | |
+| `diagnose_py.py` | Full Python diagnostics report | `--verbose`, `--help` |
+| `regenerate_manifest_py.py` | Regenerate manifest for Python apps | `--type`, `--no-uv-export`, `--no-allow-uv` |
+
+```bash
+# Run from project root
+python $SKILL_DIR/scripts/<script>.py
+```
+
+### Content Type Detection
+
+The `regenerate_manifest_py.py` script auto-detects your framework:
+
+| Framework | Detected By | rsconnect Type |
+|-----------|-------------|----------------|
+| FastAPI | `from fastapi import` | `fastapi` |
+| Flask | `from flask import` | `api` |
+| Dash | `from dash import` | `dash` |
+| Streamlit | `import streamlit` | `streamlit` |
+| Bokeh | `import bokeh` | `bokeh` |
+| Jupyter notebook | `.ipynb` files | `notebook` |
+| Generic API | Default fallback | `api` |
+
+Override with: `python $SKILL_DIR/scripts/regenerate_manifest_py.py --type fastapi`
+
+---
+
+## Python Common Workflows
+
+### Deploy After Code Changes (Python)
+
+```bash
+uv export --no-hashes -o requirements.txt  # If dependencies changed
+python $SKILL_DIR/scripts/regenerate_manifest_py.py
+git add requirements.txt manifest.json
+git commit -m "chore: update manifest"
+git push
+```
+
+### Regenerate Manifest (Python)
+
+```bash
+# Auto-detect framework
+python $SKILL_DIR/scripts/regenerate_manifest_py.py
+
+# Specify framework explicitly
+python $SKILL_DIR/scripts/regenerate_manifest_py.py --type fastapi
+
+# Skip uv export (use existing requirements.txt)
+python $SKILL_DIR/scripts/regenerate_manifest_py.py --no-uv-export
+```
+
+### Python Version Upgrade
+
+1. Update `.python-version` file
+2. Run: `uv sync`
+3. Export: `uv export --no-hashes -o requirements.txt`
+4. Regenerate manifest: `python $SKILL_DIR/scripts/regenerate_manifest_py.py`
+5. Commit and push
+
+### Rollback a Bad Deployment (Python)
+
+```bash
+# Option 1: Revert to previous commit
+git revert HEAD
+git push
+
+# Option 2: In Connect UI
+# Go to Content → Your App → History → Activate previous bundle
+```
+
+---
+
+# Shared Concepts (R & Python)
+
 ## Deployment Methods
 
-| Method | Best For | Needs manifest.json? |
-|--------|----------|---------------------|
-| **Git-backed** | Teams, CI/CD, reproducibility | Yes |
-| RStudio IDE | Quick one-off deploys | No (auto-generated) |
-| R console | Scripted deploys | No |
-| Jupyter | Python/R notebooks | No |
-| CLI (`rsconnect deploy`) | CI pipelines without Git integration | Yes |
+| Method | Language | Best For | Needs manifest.json? |
+|--------|----------|----------|---------------------|
+| **Git-backed** | R & Python | Teams, CI/CD, reproducibility | Yes |
+| RStudio IDE | R | Quick one-off deploys | No (auto-generated) |
+| R console | R | Scripted deploys | No |
+| Jupyter | R & Python | Notebooks | No |
+| CLI (`rsconnect deploy`) | R & Python | CI pipelines without Git integration | Yes |
 
 ### Git-backed (This Project)
 
 **How it works:**
 1. You generate `manifest.json` locally
-2. You push to Git (with manifest.json and renv.lock)
+2. You push to Git (with manifest.json + renv.lock/requirements.txt)
 3. Connect polls your branch (configurable, default 15 min) and auto-deploys
 
 **Why it's the easiest for teams:**
@@ -198,7 +345,8 @@ See [references/troubleshooting.md](references/troubleshooting.md) for detailed 
 - Full audit trail in Git history
 - Easy rollback (`git revert`)
 
-**Requirements:** rsconnect ≥ 0.8.15, manifest.json committed to repo
+**Requirements (R):** rsconnect ≥ 0.8.15, manifest.json committed to repo
+**Requirements (Python):** rsconnect-python, manifest.json committed to repo
 
 > **Note:** Once Git-backed, stay Git-backed. You can't switch to push-button without recreating the content in Connect.
 
@@ -214,18 +362,22 @@ main (development)
   └── deploy (Connect watches this branch)
 ```
 
-**Workflow:**
+**Workflow (R):**
 ```bash
-# Develop on main
-git checkout main
-# ... make changes ...
-git commit -m "feat: new feature"
-
-# When ready to deploy, merge to deploy branch
 git checkout deploy
 git merge main
 Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 git add manifest.json renv.lock
+git commit -m "chore: update manifest for deploy"
+git push origin deploy
+```
+
+**Workflow (Python):**
+```bash
+git checkout deploy
+git merge main
+python $SKILL_DIR/scripts/regenerate_manifest_py.py
+git add manifest.json requirements.txt
 git commit -m "chore: update manifest for deploy"
 git push origin deploy
 ```
@@ -245,10 +397,20 @@ Each Connect server points to a different branch. Merge up through environments:
 
 ## Pre-deploy Checklist
 
+### R Projects
 - [ ] Run `Rscript $SKILL_DIR/scripts/pre_deploy_check.R`
 - [ ] No Source:unknown packages
 - [ ] Manifest is up to date
 - [ ] `.rscignore` excludes dev artifacts
+- [ ] On correct branch for deployment
+- [ ] Commit and push
+
+### Python Projects
+- [ ] Run `python $SKILL_DIR/scripts/pre_deploy_check_py.py`
+- [ ] requirements.txt is up to date
+- [ ] Manifest is up to date
+- [ ] `allow_uv: true` in manifest (recommended)
+- [ ] `.rscignore` excludes dev artifacts (`.venv/`, `__pycache__/`, etc.)
 - [ ] On correct branch for deployment
 - [ ] Commit and push
 
@@ -265,3 +427,5 @@ Each Connect server points to a different branch. Merge up through environments:
 - [Posit Connect Git-backed docs](https://docs.posit.co/connect/user/git-backed/)
 - [renv documentation](https://rstudio.github.io/renv/)
 - [rsconnect writeManifest](https://rstudio.github.io/rsconnect/reference/writeManifest.html)
+- [uv documentation](https://docs.astral.sh/uv/)
+- [rsconnect-python docs](https://docs.posit.co/rsconnect-python/)
