@@ -59,7 +59,7 @@ if (renv_staged && file.exists("renv.lock")) {
   if (length(unknown_pkgs) > 0) {
     cat(SYM_CROSS, "\n")
     cat("  Packages with Source:unknown:", paste(unknown_pkgs, collapse = ", "), "\n")
-    cat("  Fix: Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R\n")
+    cat("  Fix: Rscript", skill_script_path("fix_unknown_sources.R", script_dir), "\n")
     issues <- c(issues, "Source:unknown packages found")
   } else {
     cat(SYM_CHECK, "\n")
@@ -76,7 +76,7 @@ if (file.exists("manifest.json") && file.exists("renv.lock")) {
     if (renv_staged && !manifest_staged && lock_time > manifest_time) {
       cat(SYM_WARN, "\n")
       cat("  renv.lock is staged but manifest.json is not updated\n")
-      cat("  Consider: Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R\n")
+      cat("  Consider: Rscript", skill_script_path("regenerate_manifest.R", script_dir), "\n")
       # Warning only, don't block
     } else if (manifest_time < lock_time) {
       cat(SYM_WARN, " manifest may be stale\n")
@@ -92,7 +92,7 @@ if (file.exists("manifest.json") && file.exists("renv.lock")) {
 if (renv_staged && !file.exists("manifest.json")) {
   cat("Checking manifest exists... ", SYM_CROSS, "\n")
   cat("  manifest.json missing - deployment will fail\n")
-  cat("  Fix: Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R\n")
+  cat("  Fix: Rscript", skill_script_path("regenerate_manifest.R", script_dir), "\n")
   issues <- c(issues, "manifest.json missing")
 }
 

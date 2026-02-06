@@ -1,22 +1,21 @@
 ---
 name: rsconnect
-description: Posit Connect and rsconnect deployment workflows. Use for deploying/publishing to Connect, deployment errors, git-backed content, R version upgrades, regenerating manifest.json, fixing renv/renv.lock issues, resolving Source unknown errors, package restore failures, bundle errors, writeManifest problems.
+description: Posit Connect and rsconnect deployment workflows. Use for deploying/publishing to Connect, deployment errors, git-backed content, R version upgrades, regenerating manifest.json, fixing renv/renv.lock issues, resolving Source unknown errors, package restore failures, bundle errors, writeManifest problems. Requires R, renv package, and rsconnect package (>= 0.8.15 for Git-backed deployment).
 license: MIT
-compatibility: Requires R, renv package, and rsconnect package (>= 0.8.15 for Git-backed deployment)
-allowed-tools: Bash Read
 metadata:
   author: clssck
   version: "1.0.0"
-  tags: "r, posit-connect, renv, deployment"
 ---
 
 # Posit Connect Deployment Guide
+
+In commands below, `$SKILL_DIR` means the directory containing this file. Replace it with the actual path when executing (e.g., `.claude/skills/rsconnect`, `.cursor/skills/rsconnect`).
 
 ## Quick Start (First-Time Deploy)
 
 ```bash
 # 1. Check if ready to deploy
-Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R
+Rscript $SKILL_DIR/scripts/pre_deploy_check.R
 
 # 2. Fix any issues reported, then commit
 git add manifest.json renv.lock && git commit -m "chore: update manifest"
@@ -30,7 +29,7 @@ git push
 Before doing anything else, run the pre-deploy check to understand the current state:
 
 ```bash
-Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R
+Rscript $SKILL_DIR/scripts/pre_deploy_check.R
 ```
 
 This reports: R version, rsconnect version, manifest status, Source:unknown count, and library sync state. Use the output to inform your response.
@@ -78,7 +77,7 @@ Connect needs to know WHERE to download each package. `Source: unknown` means Co
 
 **Common causes:** Package installed from local file, missing repo in options, Bioconductor package without prefix.
 
-**Fix:** `Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R --dry-run`
+**Fix:** `Rscript $SKILL_DIR/scripts/fix_unknown_sources.R --dry-run`
 
 ---
 
@@ -94,7 +93,7 @@ Connect needs to know WHERE to download each package. `Source: unknown` means Co
 
 ```bash
 # Run from project root
-Rscript .claude/skills/rsconnect/scripts/<script>.R
+Rscript $SKILL_DIR/scripts/<script>.R
 ```
 
 ### Git Pre-commit Hook
@@ -105,7 +104,7 @@ Automatically validate deployment files before each commit:
 # Install the pre-commit hook
 cat > .git/hooks/pre-commit << 'EOF'
 #!/bin/bash
-Rscript .claude/skills/rsconnect/scripts/precommit_check.R
+Rscript $SKILL_DIR/scripts/precommit_check.R
 EOF
 chmod +x .git/hooks/pre-commit
 ```
@@ -125,7 +124,7 @@ To bypass (not recommended): `git commit --no-verify`
 
 ```bash
 renv::snapshot()  # If dependencies changed
-Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 git add renv.lock manifest.json
 git commit -m "chore: update manifest"
 git push
@@ -135,13 +134,13 @@ git push
 
 ```bash
 # 1. See what would change (safe)
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R --dry-run
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R --dry-run
 
 # 2. Apply fixes (creates backup)
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R
 
 # 3. Regenerate manifest
-Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 ```
 
 ### Rollback a Bad Deployment
@@ -153,7 +152,7 @@ git push
 
 # Option 2: Restore from backup (if fix_unknown_sources.R was run)
 cp renv.lock.backup.YYYYMMDD_HHMMSS renv.lock
-Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 git add -A && git commit -m "fix: rollback deployment"
 git push
 
@@ -225,7 +224,7 @@ git commit -m "feat: new feature"
 # When ready to deploy, merge to deploy branch
 git checkout deploy
 git merge main
-Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 git add manifest.json renv.lock
 git commit -m "chore: update manifest for deploy"
 git push origin deploy
@@ -246,7 +245,7 @@ Each Connect server points to a different branch. Merge up through environments:
 
 ## Pre-deploy Checklist
 
-- [ ] Run `Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R`
+- [ ] Run `Rscript $SKILL_DIR/scripts/pre_deploy_check.R`
 - [ ] No Source:unknown packages
 - [ ] Manifest is up to date
 - [ ] `.rscignore` excludes dev artifacts

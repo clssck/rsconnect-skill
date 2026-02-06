@@ -27,7 +27,7 @@ Run all scripts from the project root directory.
 
 **Usage:**
 ```bash
-Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R
+Rscript $SKILL_DIR/scripts/pre_deploy_check.R
 ```
 
 **Note:** renv may print status messages before the check runs (from `.Rprofile` activation). Look for the boxed "PRE-DEPLOY CHECK" header for the actual results.
@@ -53,13 +53,13 @@ Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R
 **Usage:**
 ```bash
 # Standard diagnostics
-Rscript .claude/skills/rsconnect/scripts/diagnose.R
+Rscript $SKILL_DIR/scripts/diagnose.R
 
 # Include full renv::diagnostics() output
-Rscript .claude/skills/rsconnect/scripts/diagnose.R --verbose
+Rscript $SKILL_DIR/scripts/diagnose.R --verbose
 
 # Show help
-Rscript .claude/skills/rsconnect/scripts/diagnose.R --help
+Rscript $SKILL_DIR/scripts/diagnose.R --help
 ```
 
 **Flags:**
@@ -98,13 +98,13 @@ Rscript .claude/skills/rsconnect/scripts/diagnose.R --help
 **Usage:**
 ```bash
 # Preview changes (RECOMMENDED first step)
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R --dry-run
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R --dry-run
 
 # Apply fixes (creates backup automatically)
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R
 
 # Show help
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R --help
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R --help
 ```
 
 **Flags:**
@@ -142,7 +142,7 @@ cp renv.lock.backup.YYYYMMDD_HHMMSS renv.lock
 
 **Usage:**
 ```bash
-Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 ```
 
 **Exit codes:**
@@ -165,7 +165,7 @@ Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
 # Create pre-commit hook
 cat > .git/hooks/pre-commit << 'EOF'
 #!/bin/bash
-Rscript .claude/skills/rsconnect/scripts/precommit_check.R
+Rscript $SKILL_DIR/scripts/precommit_check.R
 EOF
 chmod +x .git/hooks/pre-commit
 ```
@@ -175,7 +175,7 @@ The hook runs automatically on `git commit` when renv.lock or manifest.json are 
 
 ```bash
 # Manual test run
-Rscript .claude/skills/rsconnect/scripts/precommit_check.R
+Rscript $SKILL_DIR/scripts/precommit_check.R
 
 # Bypass hook (not recommended)
 git commit --no-verify
@@ -204,19 +204,19 @@ The scripts share common utilities in `lib/parse_utils.R`:
 
 ```bash
 # 1. Check current status
-Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R
+Rscript $SKILL_DIR/scripts/pre_deploy_check.R
 
 # 2. If Source:unknown issues, preview fixes first
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R --dry-run
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R --dry-run
 
 # 3. Apply fixes (creates backup)
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R
 
 # 4. Regenerate manifest
-Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 
 # 5. Verify ready
-Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R
+Rscript $SKILL_DIR/scripts/pre_deploy_check.R
 
 # 6. Commit and push
 git add renv.lock manifest.json

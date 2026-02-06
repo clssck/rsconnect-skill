@@ -137,8 +137,8 @@ if (length(remaining) == 0) {
   cat(SYM_CHECK, "All Source:unknown issues resolved!\n\n")
   box_result(TRUE)
   cat("\nNext steps:\n")
-  cat("  1. Regenerate manifest: Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R\n")
-  cat("  2. Run pre-deploy check: Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R\n")
+  cat("  1. Regenerate manifest: Rscript", skill_script_path("regenerate_manifest.R", script_dir), "\n")
+  cat("  2. Run pre-deploy check: Rscript", skill_script_path("pre_deploy_check.R", script_dir), "\n")
   cat("\nBackup saved at:", backup_name, "(delete when satisfied)\n")
   quit(status = 0)
 } else {

@@ -4,23 +4,23 @@
 
 ```bash
 # Pre-deploy validation
-Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R
+Rscript $SKILL_DIR/scripts/pre_deploy_check.R
 
 # Full diagnostics (add --verbose for renv::diagnostics() output)
-Rscript .claude/skills/rsconnect/scripts/diagnose.R
-Rscript .claude/skills/rsconnect/scripts/diagnose.R --verbose
+Rscript $SKILL_DIR/scripts/diagnose.R
+Rscript $SKILL_DIR/scripts/diagnose.R --verbose
 
 # Fix Source:unknown (ALWAYS preview first!)
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R --dry-run
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R --dry-run
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R
 
 # Regenerate manifest.json
-Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 
 # Install pre-commit hook (validates deployment files before commit)
 cat > .git/hooks/pre-commit << 'EOF'
 #!/bin/bash
-Rscript .claude/skills/rsconnect/scripts/precommit_check.R
+Rscript $SKILL_DIR/scripts/precommit_check.R
 EOF
 chmod +x .git/hooks/pre-commit
 ```
@@ -50,7 +50,7 @@ renv::snapshot()
 
 ### Deploy after code changes
 ```bash
-Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 git add renv.lock manifest.json
 git commit -m "chore: update manifest"
 git push
@@ -59,16 +59,16 @@ git push
 ### Fix Source:unknown (recommended workflow)
 ```bash
 # 1. Preview what will change
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R --dry-run
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R --dry-run
 
 # 2. Apply fixes (creates backup)
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R
 
 # 3. Regenerate manifest
-Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 
 # 4. Verify and deploy
-Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R
+Rscript $SKILL_DIR/scripts/pre_deploy_check.R
 git add renv.lock manifest.json && git commit -m "fix: resolve Source:unknown" && git push
 ```
 
@@ -79,7 +79,7 @@ git revert HEAD && git push
 
 # Restore from backup (after fix_unknown_sources.R)
 cp renv.lock.backup.YYYYMMDD_HHMMSS renv.lock
-Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 git add -A && git commit -m "fix: rollback" && git push
 ```
 
@@ -93,5 +93,5 @@ grep '"Source": "unknown"' renv.lock
 grep -c '"Source": "unknown"' renv.lock
 
 # Full deploy prep
-R -q -e 'renv::snapshot()' && Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+R -q -e 'renv::snapshot()' && Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 ```

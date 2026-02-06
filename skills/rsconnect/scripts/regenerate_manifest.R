@@ -33,7 +33,7 @@ tryCatch({
     box_result(TRUE)
     cat("\nmanifest.json regenerated successfully\n")
     cat("\nNext steps:\n")
-    cat("  1. Run pre-deploy check: Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R\n")
+    cat("  1. Run pre-deploy check: Rscript", skill_script_path("pre_deploy_check.R", script_dir), "\n")
     cat("  2. Commit: git add manifest.json renv.lock && git commit -m 'chore: update manifest'\n")
     cat("  3. Push to trigger deployment\n")
     quit(status = 0)

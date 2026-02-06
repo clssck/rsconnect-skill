@@ -20,7 +20,7 @@ if (file.exists("manifest.json")) {
   cat(SYM_CHECK, "Present\n")
 } else {
   cat(SYM_CROSS, "MISSING\n")
-  issues <- c(issues, "Run: Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R")
+  issues <- c(issues, paste("Run: Rscript", skill_script_path("regenerate_manifest.R", script_dir)))
   passed <- FALSE
 }
 
@@ -51,7 +51,7 @@ if (file.exists("renv.lock")) {
     cat(SYM_CHECK, "None found\n")
   } else {
     cat(SYM_CROSS, length(unknown_pkgs), "found:", paste(unknown_pkgs, collapse = ", "), "\n")
-    issues <- c(issues, "Run: Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R")
+    issues <- c(issues, paste("Run: Rscript", skill_script_path("fix_unknown_sources.R", script_dir)))
     passed <- FALSE
   }
 } else {
@@ -70,7 +70,7 @@ if (file.exists("manifest.json") && file.exists("renv.lock")) {
     cat(SYM_CHECK, "manifest is up to date\n")
   } else {
     cat(SYM_WARN, "manifest may be stale (older than renv.lock)\n")
-    warnings <- c(warnings, "Consider: Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R")
+    warnings <- c(warnings, paste("Consider: Rscript", skill_script_path("regenerate_manifest.R", script_dir)))
   }
 } else {
   cat("- Skipped (missing files)\n")

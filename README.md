@@ -5,37 +5,58 @@ Agent skill for Posit Connect and rsconnect deployment workflows.
 Handles Git-backed deployment, manifest management, renv lockfile issues,
 Source:unknown errors, R version upgrades, and pre-commit validation.
 
+## Supported Agents
+
+| Agent | Install Method | Status |
+|-------|---------------|--------|
+| [Cursor](https://cursor.com) | `npx skills add` | Fully supported |
+| [Claude Code](https://claude.ai) | `npx skills add` | Fully supported |
+| [Codex](https://openai.com/codex) | `npx skills add` | Fully supported |
+| [Copilot](https://github.com/features/copilot) | Manual install | Fully supported |
+| Any agent supporting [agentskills.io](https://agentskills.io) | `npx skills add` | Fully supported |
+
 ## Install
 
 ```bash
-# Via skills CLI (recommended)
+# Via skills CLI (recommended — auto-detects your agent)
 npx skills add <owner>/rsconnect-skill
 
 # Install to a specific agent
+npx skills add <owner>/rsconnect-skill -a cursor
 npx skills add <owner>/rsconnect-skill -a claude-code
-
-# List available skills before installing
-npx skills add <owner>/rsconnect-skill --list
+npx skills add <owner>/rsconnect-skill -a codex
 ```
 
 ### Manual Installation
 
+Copy the skill into your agent's skills directory:
+
 ```bash
-# Copy the skill directory into your project
+# Cursor
+cp -r skills/rsconnect/ /path/to/your-project/.cursor/skills/rsconnect/
+
+# Claude Code
 cp -r skills/rsconnect/ /path/to/your-project/.claude/skills/rsconnect/
+
+# Copilot (or any agent using .github/)
+cp -r skills/rsconnect/ /path/to/your-project/.github/skills/rsconnect/
+
+# Generic — adapt the path to your agent's convention
+cp -r skills/rsconnect/ /path/to/your-project/<agent-skills-dir>/rsconnect/
 ```
 
 After installation, your project should have:
 
 ```
 your-project/
-  .claude/
-    skills/
-      rsconnect/
-        SKILL.md
-        scripts/
-        references/
+  <agent-skills-dir>/
+    rsconnect/
+      SKILL.md
+      scripts/
+      references/
 ```
+
+Where `<agent-skills-dir>` is your agent's skills directory (e.g., `.cursor/skills/`, `.claude/skills/`, `.github/skills/`, etc.).
 
 ## What's Included
 
@@ -57,11 +78,11 @@ Provides the agent with:
 | `regenerate_manifest.R` | Regenerate manifest.json | |
 | `precommit_check.R` | Git pre-commit hook validation | |
 
-Scripts share a common utility library (`scripts/lib/parse_utils.R`) for consistent output formatting and renv.lock parsing.
+Scripts share a common utility library (`scripts/lib/parse_utils.R`) for consistent output formatting and renv.lock parsing. Scripts auto-detect their install location at runtime — no hardcoded paths.
 
 ```bash
-# Run from project root
-Rscript .claude/skills/rsconnect/scripts/<script>.R
+# Run from project root (replace $SKILL_DIR with your actual skill path)
+Rscript $SKILL_DIR/scripts/<script>.R
 ```
 
 ### Pre-commit Hook
@@ -69,9 +90,10 @@ Rscript .claude/skills/rsconnect/scripts/<script>.R
 Validates deployment files before each commit:
 
 ```bash
+# Replace $SKILL_DIR with your actual skill path
 cat > .git/hooks/pre-commit << 'EOF'
 #!/bin/bash
-Rscript .claude/skills/rsconnect/scripts/precommit_check.R
+Rscript $SKILL_DIR/scripts/precommit_check.R
 EOF
 chmod +x .git/hooks/pre-commit
 ```
@@ -98,12 +120,12 @@ R version upgrade, git-backed content
 
 ## Compatibility
 
-| Feature | Claude Code | Other Agents |
-|---------|-------------|--------------|
-| Basic skill (SKILL.md) | Yes | Yes |
-| Dynamic context (`!` commands) | Yes | Agent-dependent |
-| `argument-hint` | Yes | Agent-dependent |
-| Helper scripts (R) | Yes (requires R) | Yes (requires R) |
+| Feature | Support |
+|---------|---------|
+| Basic skill (SKILL.md) | All agents |
+| Helper scripts (R) | All agents (requires R) |
+| Path resolution | Agent-agnostic (`$SKILL_DIR` convention) |
+| Pre-commit hook | Any Git workflow |
 
 ## License
 

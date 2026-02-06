@@ -15,7 +15,7 @@ renv::lockfile_validate()
 
 Or use the helper script:
 ```bash
-Rscript .claude/skills/rsconnect/scripts/diagnose.R --verbose
+Rscript $SKILL_DIR/scripts/diagnose.R --verbose
 ```
 
 ---
@@ -40,7 +40,7 @@ This is the **most common deployment blocker**. Connect can't restore packages w
 
 **Automated fix:**
 ```bash
-Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R --dry-run
+Rscript $SKILL_DIR/scripts/fix_unknown_sources.R --dry-run
 ```
 
 **Verify fix worked:**
@@ -110,7 +110,7 @@ renv::snapshot()
 **Cause:** Updated packages but didn't regenerate manifest.
 **Fix:**
 ```bash
-Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R
+Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 ```
 
 ---
@@ -169,7 +169,7 @@ renv::snapshot()
 
 Before opening a support ticket, run:
 ```bash
-Rscript .claude/skills/rsconnect/scripts/diagnose.R --verbose > diagnostics.txt 2>&1
+Rscript $SKILL_DIR/scripts/diagnose.R --verbose > diagnostics.txt 2>&1
 ```
 
 This captures environment info, package versions, and renv status useful for debugging.

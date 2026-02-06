@@ -143,7 +143,7 @@ cat("=== Summary ===\n")
 if (length(issues) == 0) {
   cat(SYM_CHECK, "No issues detected!\n")
   cat("\nReady to deploy. Run pre-deploy check to confirm:\n")
-  cat("  Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R\n")
+  cat("  Rscript", skill_script_path("pre_deploy_check.R", script_dir), "\n")
   quit(status = 0)
 } else {
   cat(SYM_CROSS, length(issues), "issue(s) found:\n")
@@ -151,7 +151,7 @@ if (length(issues) == 0) {
     cat("  ", i, ". ", issues[i], "\n", sep = "")
   }
   cat("\nSuggested fixes:\n")
-  cat("  - Fix Source:unknown: Rscript .claude/skills/rsconnect/scripts/fix_unknown_sources.R --dry-run\n")
-  cat("  - Regenerate manifest: Rscript .claude/skills/rsconnect/scripts/regenerate_manifest.R\n")
+  cat("  - Fix Source:unknown: Rscript", skill_script_path("fix_unknown_sources.R", script_dir), "--dry-run\n")
+  cat("  - Regenerate manifest: Rscript", skill_script_path("regenerate_manifest.R", script_dir), "\n")
   quit(status = 1)
 }

@@ -146,3 +146,53 @@ if (length(file_arg) > 0) {
   # Last resort: current directory
   getwd()
 }
+
+#' Get the skill root directory (agent-agnostic)
+#'
+#' Computes the skill root by walking up from the script's location.
+#' Works regardless of where the skill is installed:
+#'   .claude/skills/rsconnect/, .cursor/skills/rsconnect/, etc.
+#'
+#' @param from_dir Directory to resolve from (default: auto-detect via get_script_dir())
+#' @return Absolute path to the skill root directory
+get_skill_root <- function(from_dir = NULL) {
+  if (is.null(from_dir)) {
+    from_dir <- get_script_dir()
+  }
+
+  # Walk up from scripts/lib/ -> scripts/ -> skill root
+  # Or from scripts/ -> skill root
+  dir <- normalizePath(from_dir, mustWork = FALSE)
+  if (basename(dir) == "lib") {
+    dir <- dirname(dir)  # lib/ -> scripts/
+  }
+  if (basename(dir) == "scripts") {
+    dir <- dirname(dir)  # scripts/ -> skill root
+  }
+  dir
+}
+
+#' Build full path to a skill script (agent-agnostic)
+#'
+#' Returns the full path for a script relative to the skill root,
+#' suitable for display in output messages.
+#'
+#' @param script_name Script filename (e.g., "fix_unknown_sources.R")
+#' @param from_dir Directory to resolve from (default: auto-detect)
+#' @return Relative path from working directory to the script
+skill_script_path <- function(script_name, from_dir = NULL) {
+  root <- get_skill_root(from_dir)
+  full_path <- file.path(root, "scripts", script_name)
+
+  # Return path relative to working directory for cleaner output
+  wd <- normalizePath(getwd(), mustWork = FALSE)
+  full_norm <- normalizePath(full_path, mustWork = FALSE)
+
+  # Try to make it relative
+  if (startsWith(full_norm, wd)) {
+    rel <- substring(full_norm, nchar(wd) + 2)  # +2 to skip trailing /
+    if (nchar(rel) > 0) return(rel)
+  }
+
+  full_path
+}
