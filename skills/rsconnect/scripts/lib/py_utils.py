@@ -8,12 +8,27 @@ Mirrors the patterns from parse_utils.R:
 - Manifest and requirements.txt parsing
 """
 
+import io
 import json
 import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+# Force UTF-8 stdout/stderr on Windows where the default codepage (cp1252)
+# can't encode box-drawing characters or check-mark symbols.
+if sys.platform == "win32":
+    if not isinstance(sys.stdout, io.TextIOWrapper) or sys.stdout.encoding.lower().replace("-", "") != "utf8":
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except (AttributeError, OSError):
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    if not isinstance(sys.stderr, io.TextIOWrapper) or sys.stderr.encoding.lower().replace("-", "") != "utf8":
+        try:
+            sys.stderr.reconfigure(encoding="utf-8")
+        except (AttributeError, OSError):
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 # Unicode symbols for consistent output (matches R scripts)
 SYM_CHECK = "\u2713"  # check mark
@@ -47,10 +62,13 @@ def box_result(success: bool, width: int = 40) -> None:
 
 
 def get_script_dir() -> Path:
-    """Get the directory of the currently running script."""
-    # sys.argv[0] is the script path when run via `python script.py`
+    """Get the directory of the currently running script.
+
+    Uses the *unresolved* argv[0] so the returned path matches
+    what the user typed (e.g. .cursor/skills/... not a resolved symlink).
+    """
     if sys.argv[0]:
-        script_path = Path(sys.argv[0]).resolve()
+        script_path = Path(sys.argv[0]).absolute()
         if script_path.is_file():
             return script_path.parent
     return Path.cwd()
@@ -65,7 +83,7 @@ def get_skill_root(from_dir: Path | None = None) -> Path:
     if from_dir is None:
         from_dir = get_script_dir()
 
-    d = from_dir.resolve()
+    d = from_dir.absolute()
     if d.name == "lib":
         d = d.parent  # lib/ -> scripts/
     if d.name == "scripts":
@@ -76,7 +94,9 @@ def get_skill_root(from_dir: Path | None = None) -> Path:
 def skill_script_path(script_name: str, from_dir: Path | None = None) -> str:
     """Build a display-friendly path to a skill script.
 
-    Returns relative path from cwd when possible, for cleaner output.
+    Uses the unresolved (non-symlink-followed) path from argv[0] so the
+    output matches the actual directory the user sees on disk
+    (e.g. .cursor/skills/... not .agents/skills/...).
     """
     root = get_skill_root(from_dir)
     full_path = root / "scripts" / script_name
