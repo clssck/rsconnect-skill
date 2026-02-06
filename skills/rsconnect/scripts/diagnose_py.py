@@ -19,6 +19,7 @@ from py_utils import (
     SYM_WARN,
     box_header,
     check_command,
+    check_skill_dir_gitignored,
     get_local_python_version,
     get_manifest_allow_uv,
     get_manifest_content_type,
@@ -83,6 +84,20 @@ elif check_command("uvx"):
 else:
     print("rsconnect-python: NOT INSTALLED")
     issues.append("rsconnect-python not installed — install: uv tool install rsconnect-python")
+
+print()
+
+# Gitignore check
+print("--- Gitignore ---")
+is_ignored, agent_dir = check_skill_dir_gitignored()
+if agent_dir:
+    if is_ignored:
+        print(f"{SYM_CHECK} {agent_dir}/ is in .gitignore")
+    else:
+        print(f"{SYM_WARN} {agent_dir}/ is NOT in .gitignore")
+        issues.append(f"Add '{agent_dir}/' to .gitignore to avoid committing agent skill files")
+else:
+    print("Skill not under a recognized agent directory — skipped")
 
 print()
 

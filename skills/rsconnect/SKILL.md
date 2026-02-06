@@ -11,6 +11,25 @@ metadata:
 
 In commands below, `$SKILL_DIR` means the directory containing this file. Replace it with the actual path when executing (e.g., `.claude/skills/rsconnect`, `.cursor/skills/rsconnect`).
 
+## First-Time Setup: Gitignore
+
+**On first use, ensure the agent skills directory is gitignored.** The skill folder (e.g., `.cursor/`, `.agents/`, `.claude/`) should not be committed to the project repository.
+
+Check if `.gitignore` already contains the relevant entry. If not, add it:
+
+```bash
+# For Cursor-installed skills:
+echo ".cursor/" >> .gitignore
+
+# For .agents/ installed skills:
+echo ".agents/" >> .gitignore
+
+# For Claude Code skills:
+echo ".claude/" >> .gitignore
+```
+
+> **Rule:** Only add the entry for the agent directory that is actually present in the project. Do not add entries for directories that don't exist.
+
 ## Before Proceeding
 
 **Ask the user if not clear from context:**

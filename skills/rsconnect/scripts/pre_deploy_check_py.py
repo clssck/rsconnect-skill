@@ -20,6 +20,7 @@ from py_utils import (
     box_header,
     box_result,
     check_command,
+    check_skill_dir_gitignored,
     get_local_python_version,
     get_manifest_allow_uv,
     get_requirements_packages,
@@ -33,6 +34,13 @@ warnings = []
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 box_header("PYTHON PRE-DEPLOY CHECK")
+
+# Preliminary: check if skill directory is gitignored
+is_ignored, agent_dir = check_skill_dir_gitignored()
+if not is_ignored and agent_dir:
+    print(f"{SYM_WARN} Skill directory '{agent_dir}/' is not in .gitignore")
+    warnings.append(f"Add '{agent_dir}/' to .gitignore to avoid committing agent skill files")
+    print()
 
 # Check 1: manifest.json exists
 print("1. Manifest file... ", end="")

@@ -196,3 +196,55 @@ skill_script_path <- function(script_name, from_dir = NULL) {
 
   full_path
 }
+
+#' Check if the agent skill directory is listed in .gitignore
+#'
+#' Detects the top-level agent directory (e.g. .cursor, .agents, .claude)
+#' from the running script's path, then checks if .gitignore covers it.
+#'
+#' @param from_dir Directory to resolve from (default: auto-detect)
+#' @return List with $ignored (logical) and $agent_dir (character or NULL)
+check_skill_dir_gitignored <- function(from_dir = NULL) {
+  skill_root <- get_skill_root(from_dir)
+  wd <- normalizePath(getwd(), mustWork = FALSE)
+  skill_norm <- normalizePath(skill_root, mustWork = FALSE)
+
+  # Get relative path from working directory
+  if (!startsWith(skill_norm, wd)) {
+    return(list(ignored = TRUE, agent_dir = NULL))
+  }
+
+  rel <- substring(skill_norm, nchar(wd) + 2)
+  if (nchar(rel) == 0) {
+    return(list(ignored = TRUE, agent_dir = NULL))
+  }
+
+  # The agent dir is the first path component (e.g. ".cursor")
+  parts <- strsplit(rel, .Platform$file.sep)[[1]]
+  if (length(parts) == 0) {
+    return(list(ignored = TRUE, agent_dir = NULL))
+  }
+  agent_dir <- parts[1]
+
+  # Only check hidden directories (agent conventions)
+  if (!startsWith(agent_dir, ".")) {
+    return(list(ignored = TRUE, agent_dir = NULL))
+  }
+
+  # Check .gitignore
+  gitignore_path <- ".gitignore"
+  if (!file.exists(gitignore_path)) {
+    return(list(ignored = FALSE, agent_dir = agent_dir))
+  }
+
+  lines <- readLines(gitignore_path, warn = FALSE)
+  lines <- trimws(lines)
+  patterns <- c(agent_dir, paste0(agent_dir, "/"),
+                paste0("/", agent_dir), paste0("/", agent_dir, "/"))
+
+  if (any(lines %in% patterns)) {
+    return(list(ignored = TRUE, agent_dir = agent_dir))
+  }
+
+  list(ignored = FALSE, agent_dir = agent_dir)
+}

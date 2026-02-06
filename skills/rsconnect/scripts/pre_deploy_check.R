@@ -14,6 +14,14 @@ warnings <- character()
 # Header
 box_header("PRE-DEPLOY CHECK")
 
+# Preliminary: check if skill directory is gitignored
+gitignore_status <- check_skill_dir_gitignored(script_dir)
+if (!gitignore_status$ignored && !is.null(gitignore_status$agent_dir)) {
+  cat(SYM_WARN, paste0("Skill directory '", gitignore_status$agent_dir, "/' is not in .gitignore\n"))
+  warnings <- c(warnings, paste0("Add '", gitignore_status$agent_dir, "/' to .gitignore to avoid committing agent skill files"))
+  cat("\n")
+}
+
 # Check 1: manifest.json exists
 cat("1. Manifest file... ")
 if (file.exists("manifest.json")) {

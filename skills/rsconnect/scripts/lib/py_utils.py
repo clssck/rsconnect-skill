@@ -201,6 +201,46 @@ def get_requirements_packages(req_path: str = "requirements.txt") -> list[str]:
     return packages
 
 
+def check_skill_dir_gitignored() -> tuple[bool, str | None]:
+    """Check if the agent skill directory is listed in .gitignore.
+
+    Detects the top-level agent directory (e.g. .cursor, .agents, .claude)
+    from the running script's path, then checks if .gitignore covers it.
+
+    Returns (is_ignored, agent_dir_name) where agent_dir_name is the
+    directory that should be gitignored (e.g. '.cursor'), or None if
+    the skill isn't installed under a recognizable agent directory.
+    """
+    skill_root = get_skill_root()
+    try:
+        rel = skill_root.relative_to(Path.cwd())
+    except ValueError:
+        return True, None  # Can't determine — skip the check
+
+    # The agent dir is the first component (e.g. ".cursor" from ".cursor/skills/rsconnect")
+    parts = rel.parts
+    if not parts:
+        return True, None
+
+    agent_dir = parts[0]  # e.g. ".cursor", ".agents", ".claude"
+    if not agent_dir.startswith("."):
+        return True, None  # Not a hidden agent dir — skip
+
+    # Check .gitignore
+    gitignore_path = Path(".gitignore")
+    if not gitignore_path.exists():
+        return False, agent_dir
+
+    gitignore_content = gitignore_path.read_text()
+    # Check for the directory with or without trailing slash
+    for line in gitignore_content.splitlines():
+        line = line.strip()
+        if line in (agent_dir, agent_dir + "/", f"/{agent_dir}", f"/{agent_dir}/"):
+            return True, agent_dir
+
+    return False, agent_dir
+
+
 def get_local_python_version() -> str | None:
     """Get the local Python major.minor.patch version.
 
