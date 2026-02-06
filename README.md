@@ -20,12 +20,12 @@ Python/uv deployments, FastAPI/Flask/Dash/Streamlit apps, and requirements.txt m
 
 ```bash
 # Via skills CLI (recommended — auto-detects your agent)
-npx skills add <owner>/rsconnect-skill
+npx skills add clssck/rsconnect-skill
 
 # Install to a specific agent
-npx skills add <owner>/rsconnect-skill -a cursor
-npx skills add <owner>/rsconnect-skill -a claude-code
-npx skills add <owner>/rsconnect-skill -a codex
+npx skills add clssck/rsconnect-skill -a cursor
+npx skills add clssck/rsconnect-skill -a claude-code
+npx skills add clssck/rsconnect-skill -a codex
 ```
 
 ### Manual Installation
