@@ -28,16 +28,15 @@ git add manifest.json renv.lock && git commit -m "chore: update manifest"
 git push
 ```
 
-## Current Project Status
+## First Step: Gather Project Status
 
-**R Version:** !`R --version 2>/dev/null | head -1 || echo 'R not detected'`
-**rsconnect:** !`R -q -e 'cat(as.character(packageVersion("rsconnect")))' 2>/dev/null || echo 'Not installed'`
-**renv:** !`R -q -e 'cat(as.character(packageVersion("renv")))' 2>/dev/null || echo 'Not installed'`
-**Manifest:** !`test -f manifest.json && echo 'Present' || echo 'MISSING'`
-**Source Unknown:** !`grep -c '"Source": "unknown"' renv.lock 2>/dev/null | cat` packages
-**Status:** !`test -f manifest.json && ! grep -q '"Source": "unknown"' renv.lock 2>/dev/null && echo 'Ready to deploy' || echo 'Check issues above'`
+Before doing anything else, run the pre-deploy check to understand the current state:
 
-**User request:** $ARGUMENTS
+```bash
+Rscript .claude/skills/rsconnect/scripts/pre_deploy_check.R
+```
+
+This reports: R version, rsconnect version, manifest status, Source:unknown count, and library sync state. Use the output to inform your response.
 
 ---
 
@@ -264,7 +263,6 @@ Each Connect server points to a different branch. Merge up through environments:
 - **Script docs:** [scripts/README.md](scripts/README.md)
 - **Troubleshooting:** [references/troubleshooting.md](references/troubleshooting.md)
 - **Commands:** [references/commands.md](references/commands.md)
-- **Manifest guide:** [../../../docs/manifest-update-guide.md](../../../docs/manifest-update-guide.md)
 
 ### External Links
 
