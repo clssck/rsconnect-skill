@@ -318,6 +318,10 @@ The R scripts share common utilities in `lib/parse_utils.R`:
 The Python scripts share common utilities in `lib/py_utils.py`:
 
 - `parse_manifest_python_version()` — Read Python version from manifest.json
+- `get_local_python_version()` — Get Python version from `.python-version` or interpreter
+- `get_python_version_file()` — Read raw `.python-version` content
+- `get_pyproject_requires_python()` — Read `requires-python` from pyproject.toml
+- `is_exact_python_version()` — Check if version has major.minor.patch
 - `get_requirements_packages()` — Parse requirements.txt
 - `get_manifest_allow_uv()` — Check allow_uv status
 - `box_header()` / `box_result()` — Consistent output formatting (matches R)

@@ -241,17 +241,143 @@ def check_skill_dir_gitignored() -> tuple[bool, str | None]:
     return False, agent_dir
 
 
-def get_local_python_version() -> str | None:
-    """Get the local Python major.minor.patch version.
+def is_exact_python_version(version: str) -> bool:
+    """Check if a version string has all three parts (major.minor.patch).
 
-    Checks .python-version file first, then falls back to sys.version_info.
+    Examples: '3.13.6' -> True, '3.13' -> False, '3' -> False.
     """
-    # Check .python-version file (used by pyenv, uv, etc.)
+    parts = version.split(".")
+    return len(parts) >= 3 and all(p.isdigit() for p in parts[:3])
+
+
+def get_python_version_file() -> str | None:
+    """Read the raw content of .python-version (unresolved).
+
+    Returns the version string as written in the file, or None if
+    the file doesn't exist or is empty.
+    """
     pv_file = Path(".python-version")
     if pv_file.exists():
         version = pv_file.read_text().strip()
         if version:
             return version
+    return None
+
+
+def get_pyproject_requires_python() -> str | None:
+    """Read requires-python from pyproject.toml.
+
+    Returns the constraint string (e.g. '>=3.12', '==3.13.6') or None.
+    """
+    pyproject_path = Path("pyproject.toml")
+    if not pyproject_path.exists():
+        return None
+
+    try:
+        # tomllib is stdlib in 3.11+; fall back to parsing manually
+        try:
+            import tomllib
+        except ImportError:
+            try:
+                import tomli as tomllib  # type: ignore[no-redef]
+            except ImportError:
+                # Manual fallback: scan for requires-python
+                content = pyproject_path.read_text()
+                for line in content.splitlines():
+                    line = line.strip()
+                    if line.startswith("requires-python"):
+                        _, _, value = line.partition("=")
+                        # Strip the first '=' from e.g. '= ">=3.12"'
+                        value = value.lstrip("= ").strip().strip('"').strip("'")
+                        if value:
+                            return value
+                return None
+
+        data = tomllib.loads(pyproject_path.read_text())
+        return data.get("project", {}).get("requires-python")
+    except Exception:
+        return None
+
+
+def generate_pyproject_toml(
+    project_name: str | None = None,
+    python_version: str | None = None,
+    dependencies: list[str] | None = None,
+) -> str:
+    """Generate minimal pyproject.toml content for Posit Connect deployment.
+
+    Args:
+        project_name: Project name (defaults to current directory name).
+        python_version: Python version from .python-version (used for requires-python).
+        dependencies: List of package specs (defaults to parsing requirements.txt).
+
+    Returns the file content as a string.
+    """
+    import re
+
+    if project_name is None:
+        project_name = Path.cwd().name
+    # PEP 508: lowercase, alphanumeric + hyphens
+    project_name = re.sub(r"[^a-zA-Z0-9._-]", "-", project_name).lower().strip("-")
+
+    if python_version is None:
+        python_version = get_python_version_file()
+
+    # Build requires-python from .python-version (major.minor lower bound)
+    if python_version:
+        parts = python_version.split(".")
+        requires_python = f">={parts[0]}.{parts[1]}"
+    else:
+        requires_python = ">=3.12"
+
+    if dependencies is None:
+        # Parse from requirements.txt, stripping pinned versions to loose specs
+        dependencies = _requirements_to_dependencies()
+
+    # Format dependencies list
+    if dependencies:
+        deps_lines = "\n".join(f'    "{dep}",' for dep in dependencies)
+        deps_block = f"dependencies = [\n{deps_lines}\n]"
+    else:
+        deps_block = "dependencies = []"
+
+    return (
+        f'[project]\nname = "{project_name}"\nversion = "0.1.0"\n'
+        f'requires-python = "{requires_python}"\n{deps_block}\n'
+    )
+
+
+def _requirements_to_dependencies(req_path: str = "requirements.txt") -> list[str]:
+    """Convert requirements.txt entries to pyproject.toml dependency specs.
+
+    Strips exact pins (==) to minimum bounds (>=) so pyproject.toml has
+    loose constraints while requirements.txt/uv.lock keep the pins.
+    """
+    import re
+
+    deps = []
+    for spec in get_requirements_packages(req_path):
+        # Strip hashes, environment markers after ;
+        spec = spec.split(";")[0].strip()
+        # Convert == pins to >= (pyproject.toml should be loose)
+        spec = re.sub(r"==(\d)", r">=\1", spec)
+        if spec:
+            deps.append(spec)
+    return deps
+
+
+def get_local_python_version() -> str | None:
+    """Get the Python version from .python-version or the running interpreter.
+
+    Returns the version string as-is from .python-version (e.g. '3.13' or
+    '3.13.6'). Falls back to sys.version_info if no file exists.
+
+    Does NOT resolve short versions — callers should use
+    is_exact_python_version() to check and warn if needed.
+    """
+    pv_version = get_python_version_file()
+    if pv_version:
+        return pv_version
 
     # Fall back to running Python version
     info = sys.version_info

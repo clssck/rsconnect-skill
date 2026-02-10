@@ -320,7 +320,8 @@ python $SKILL_DIR/scripts/regenerate_manifest_py.py --no-uv-export
 
 ### Python Version Upgrade
 
-1. Update `.python-version` file
+1. Update `.python-version` with **exact** major.minor.patch (e.g. `3.13.6`, not `3.13`)
+   — Posit Connect requires exact version pinning
 2. Run: `uv sync`
 3. Export: `uv export --no-hashes -o requirements.txt`
 4. Regenerate manifest: `python $SKILL_DIR/scripts/regenerate_manifest_py.py`

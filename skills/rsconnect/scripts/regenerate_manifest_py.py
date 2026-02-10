@@ -27,7 +27,10 @@ from py_utils import (
     box_header,
     box_result,
     check_command,
+    generate_pyproject_toml,
     get_local_python_version,
+    get_python_version_file,
+    is_exact_python_version,
     run_command,
     skill_script_path,
 )
@@ -146,6 +149,12 @@ def main() -> None:
     # Determine target Python version from .python-version or current interpreter
     target_python = get_local_python_version()
 
+    # Warn if .python-version uses a short version (e.g. 3.13 instead of 3.13.6)
+    raw_pv = get_python_version_file()
+    if raw_pv and not is_exact_python_version(raw_pv):
+        print(f"{SYM_WARN} .python-version says '{raw_pv}' — needs exact major.minor.patch")
+        print(f"  Set to the version on your Connect server (e.g. {raw_pv}.6)")
+
     # Build rsconnect command — use uvx --python to ensure the manifest
     # gets stamped with the correct Python version (matching .python-version).
     # Note: the package is "rsconnect-python" but the executable is "rsconnect",
@@ -185,13 +194,20 @@ def main() -> None:
             print("Install uv or use --no-uv-export with existing requirements.txt")
             sys.exit(1)
 
-        # Check if pyproject.toml exists (uv export needs it)
+        # Generate pyproject.toml if missing (uv export needs it)
         if not os.path.exists("pyproject.toml"):
-            print(f"{SYM_WARN}")
-            print("  No pyproject.toml found — uv export requires it")
-            print("  Create one with: uv init")
-            print("  Or use --no-uv-export with a manually maintained requirements.txt")
-            sys.exit(1)
+            print(f"{SYM_WARN} no pyproject.toml")
+            print("  Generating minimal pyproject.toml... ", end="")
+            content = generate_pyproject_toml(python_version=target_python)
+            try:
+                with open("pyproject.toml", "w") as f:
+                    f.write(content)
+                print(f"{SYM_CHECK}")
+                print(f"  {SYM_WARN} Review pyproject.toml and adjust dependencies as needed")
+            except OSError as e:
+                print(f"{SYM_CROSS} Failed: {e}")
+                print("  Create manually or use --no-uv-export with existing requirements.txt")
+                sys.exit(1)
 
         result = run_command(["uv", "export", "--no-hashes", "-o", "requirements.txt"])
         if result.returncode == 0:

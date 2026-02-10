@@ -179,7 +179,8 @@ python $SKILL_DIR/scripts/regenerate_manifest_py.py
 
 **Error:** Deployment fails with Python version errors, or app behaves differently on Connect.
 
-**Cause:** The Python major.minor version in `manifest.json` doesn't match what's available on Connect.
+**Cause:** The Python version in `manifest.json` doesn't match what's available on Connect.
+Posit Connect requires an **exact** major.minor.patch version (e.g. `3.13.6`, not `3.13`).
 
 **Diagnosis:**
 ```bash
@@ -188,7 +189,7 @@ python $SKILL_DIR/scripts/diagnose_py.py
 
 **Fix:**
 1. Check which Python versions are installed on Connect (ask your admin)
-2. Update your `.python-version` file to match
+2. Update `.python-version` with the **exact** version (e.g. `3.13.6`, not `3.13`)
 3. Run `uv sync` to recreate the environment
 4. Regenerate: `python $SKILL_DIR/scripts/regenerate_manifest_py.py`
 

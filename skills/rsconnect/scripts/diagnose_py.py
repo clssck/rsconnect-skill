@@ -24,7 +24,10 @@ from py_utils import (
     get_manifest_allow_uv,
     get_manifest_content_type,
     get_manifest_entrypoint,
+    get_pyproject_requires_python,
+    get_python_version_file,
     get_requirements_packages,
+    is_exact_python_version,
     parse_manifest_python_version,
     run_command,
     skill_script_path,
@@ -56,8 +59,20 @@ box_header("PYTHON DEPLOYMENT DIAGNOSTICS")
 print("--- Environment ---")
 
 # Python version
+raw_pv = get_python_version_file()
 local_version = get_local_python_version()
-print(f"Python version: {local_version}")
+if raw_pv and not is_exact_python_version(raw_pv):
+    requires_py = get_pyproject_requires_python()
+    hint = ""
+    if requires_py:
+        hint = f" | pyproject.toml requires-python: {requires_py}"
+    print(f"Python version: {local_version} {SYM_WARN} not exact")
+    issues.append(
+        f".python-version uses '{raw_pv}' — Posit Connect needs exact version "
+        f"(e.g. {raw_pv}.6). Set to the version on your Connect server{hint}"
+    )
+else:
+    print(f"Python version: {local_version}")
 print(f"Python path: {sys.executable}")
 print(f"Working dir: {os.getcwd()}")
 
