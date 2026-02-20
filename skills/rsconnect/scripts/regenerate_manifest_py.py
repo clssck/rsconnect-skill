@@ -38,48 +38,193 @@ from py_utils import (
 CONTENT_TYPES = ["api", "fastapi", "flask", "dash", "streamlit", "bokeh", "notebook"]
 
 
+def _parse_pyproject() -> dict | None:
+    if not os.path.exists("pyproject.toml"):
+        return None
+    try:
+        import tomllib
+    except ImportError:
+        return None
+    try:
+        with open("pyproject.toml", "rb") as f:
+            return tomllib.load(f)
+    except Exception:
+        return None
+
+
+def _parse_pyproject_name() -> str | None:
+    data = _parse_pyproject()
+    if data:
+        name = data.get("project", {}).get("name")
+        if name:
+            return name
+    try:
+        in_project = False
+        with open("pyproject.toml") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("["):
+                    in_project = line == "[project]"
+                    continue
+                if not in_project or not line.startswith("name"):
+                    continue
+                _, _, value = line.partition("=")
+                value = value.strip().strip('"').strip("'")
+                if value:
+                    return value
+    except OSError:
+        pass
+    return None
+
+
+def _parse_pyproject_entrypoints() -> list[str]:
+    def add_module(target: list[str], value: str | None) -> None:
+        if not value:
+            return
+        module = value.split(":", 1)[0].strip()
+        if module and module not in target:
+            target.append(module)
+
+    modules: list[str] = []
+    data = _parse_pyproject()
+    if data:
+        project = data.get("project", {})
+        scripts = project.get("scripts", {})
+        if isinstance(scripts, dict):
+            for value in scripts.values():
+                if isinstance(value, str):
+                    add_module(modules, value)
+        entry_points = project.get("entry-points") or project.get("entry_points") or {}
+        if isinstance(entry_points, dict):
+            for group in entry_points.values():
+                if isinstance(group, dict):
+                    for value in group.values():
+                        if isinstance(value, str):
+                            add_module(modules, value)
+        if modules:
+            return modules
+
+    if not os.path.exists("pyproject.toml"):
+        return modules
+
+    try:
+        in_section = False
+        with open("pyproject.toml") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("["):
+                    in_section = line.startswith("[project.scripts]") or line.startswith("[project.entry-points.")
+                    continue
+                if not in_section or "=" not in line:
+                    continue
+                _, _, value = line.partition("=")
+                value = value.strip().strip('"').strip("'")
+                add_module(modules, value)
+    except OSError:
+        pass
+
+    return modules
+
+
+def _module_to_paths(module: str) -> list[str]:
+    rel = module.replace(".", os.sep)
+    return [f"{rel}.py", os.path.join(rel, "__init__.py")]
+
+
 def detect_content_type() -> str | None:
     """Auto-detect Python content type from project files.
 
     Looks for common entrypoint files and framework imports.
     """
-    # Check common entrypoint files
-    candidates = ["app.py", "main.py", "api.py", "application.py", "server.py"]
-    entrypoint = None
-    for name in candidates:
-        if os.path.exists(name):
-            entrypoint = name
-            break
+    candidates = [
+        "app.py",
+        "main.py",
+        "api.py",
+        "application.py",
+        "server.py",
+        "wsgi.py",
+        "asgi.py",
+    ]
+    search_dirs: list[str] = []
+    seen_dirs: set[str] = set()
 
-    if entrypoint is None:
-        # Check for notebooks
-        for f in os.listdir("."):
-            if f.endswith(".ipynb"):
-                return "notebook"
+    def add_dir(path: str) -> None:
+        if not path:
+            return
+        norm = os.path.normpath(path)
+        if norm in seen_dirs:
+            return
+        if os.path.isdir(norm):
+            search_dirs.append(norm)
+            seen_dirs.add(norm)
+
+    add_dir(".")
+    add_dir("src")
+
+    project_name = _parse_pyproject_name()
+    if project_name:
+        normalized = project_name.replace("-", "_")
+        add_dir(normalized)
+        add_dir(os.path.join("src", normalized))
+
+    for base in [".", "src"]:
+        if not os.path.isdir(base):
+            continue
+        for entry in os.listdir(base):
+            if entry.startswith(".") or entry in {"__pycache__", ".venv", "venv", ".git"}:
+                continue
+            path = os.path.join(base, entry)
+            if os.path.isdir(path) and os.path.isfile(os.path.join(path, "__init__.py")):
+                add_dir(path)
+
+    candidate_paths: list[str] = []
+    seen_paths: set[str] = set()
+
+    def add_path(path: str) -> None:
+        if not path or path in seen_paths:
+            return
+        if os.path.exists(path):
+            candidate_paths.append(path)
+            seen_paths.add(path)
+
+    for base in search_dirs:
+        for name in candidates:
+            add_path(os.path.join(base, name))
+
+    for module in _parse_pyproject_entrypoints():
+        for rel in _module_to_paths(module):
+            add_path(rel)
+            add_path(os.path.join("src", rel))
+
+    if not candidate_paths:
+        for base in (".", "src", "notebooks"):
+            if not os.path.isdir(base):
+                continue
+            for entry in os.listdir(base):
+                if entry.endswith(".ipynb"):
+                    return "notebook"
         return None
 
-    # Read the entrypoint and check imports
-    try:
-        with open(entrypoint) as f:
-            content = f.read()
-    except OSError:
-        return "api"  # Safe default
+    for entrypoint in candidate_paths:
+        try:
+            with open(entrypoint) as f:
+                content = f.read()
+        except OSError:
+            continue
 
-    # Check for framework-specific imports
-    if re.search(r"from\s+fastapi\s+import|import\s+fastapi", content):
-        return "fastapi"
-    if re.search(r"from\s+flask\s+import|import\s+flask", content):
-        return "flask"
-    if re.search(r"from\s+dash\s+import|import\s+dash", content):
-        return "dash"
-    if re.search(r"from\s+streamlit|import\s+streamlit", content):
-        return "streamlit"
-    if re.search(r"from\s+bokeh|import\s+bokeh", content):
-        return "bokeh"
-    if re.search(r"from\s+shiny\s+import|import\s+shiny", content):
-        return "api"  # Shiny for Python uses api type
+        if re.search(r"from\s+fastapi\s+import|import\s+fastapi", content):
+            return "fastapi"
+        if re.search(r"from\s+flask\s+import|import\s+flask", content):
+            return "flask"
+        if re.search(r"from\s+dash\s+import|import\s+dash", content):
+            return "dash"
+        if re.search(r"from\s+streamlit|import\s+streamlit", content):
+            return "streamlit"
+        if re.search(r"from\s+bokeh|import\s+bokeh", content):
+            return "bokeh"
+        if re.search(r"from\s+shiny\s+import|import\s+shiny", content):
+            return "api"  # Shiny for Python uses api type
 
-    # Default: generic API
     return "api"
 
 

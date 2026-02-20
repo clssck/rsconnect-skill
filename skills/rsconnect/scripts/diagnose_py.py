@@ -174,6 +174,11 @@ if os.path.exists("manifest.json"):
             issues.append(
                 f"Python version mismatch (local {local_mm} vs manifest {manifest_mm})"
             )
+        elif manifest_py_ver != local_version:
+            print(f"{SYM_WARN} Patch mismatch: local {local_version} vs manifest {manifest_py_ver}")
+            issues.append(
+                "Python patch mismatch — Posit Connect requires an exact patch version in manifest.json"
+            )
 else:
     print("No manifest.json found")
 

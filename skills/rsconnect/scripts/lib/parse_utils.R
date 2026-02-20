@@ -15,6 +15,22 @@ parse_unknown_sources <- function(lock_path = "renv.lock") {
     return(character())
   }
 
+  if (requireNamespace("jsonlite", quietly = TRUE)) {
+    parsed <- tryCatch(
+      jsonlite::fromJSON(lock_path, simplifyVector = FALSE),
+      error = function(e) NULL
+    )
+    if (!is.null(parsed) && !is.null(parsed$Packages) && is.list(parsed$Packages)) {
+      pkgs <- parsed$Packages
+      if (!is.null(names(pkgs))) {
+        unknown_pkgs <- names(pkgs)[vapply(pkgs, function(pkg) {
+          is.list(pkg) && identical(pkg$Source, "unknown")
+        }, logical(1))]
+        return(unique(unknown_pkgs))
+      }
+    }
+  }
+
   lock_content <- readLines(lock_path, warn = FALSE)
   unknown_lines <- grep('"Source":\\s*"unknown"', lock_content)
 
@@ -24,7 +40,7 @@ parse_unknown_sources <- function(lock_path = "renv.lock") {
 
   # Extract package names by looking backwards from each Source: unknown line
 
-unknown_pkgs <- vapply(unknown_lines, function(line_num) {
+  unknown_pkgs <- vapply(unknown_lines, function(line_num) {
     for (i in seq(line_num, max(1, line_num - 10), by = -1)) {
       if (grepl('"Package":', lock_content[i])) {
         return(sub('.*"Package":\\s*"([^"]+)".*', "\\1", lock_content[i]))

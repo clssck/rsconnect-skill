@@ -1,7 +1,8 @@
 ---
 name: rsconnect
-description: Posit Connect deployment workflows for R and Python. Use for deploying/publishing to Connect, deployment errors, git-backed content, R version upgrades, regenerating manifest.json, fixing renv/renv.lock issues, resolving Source unknown errors, package restore failures, bundle errors, writeManifest problems, FastAPI, Flask, uv, requirements.txt, Python version, rsconnect-python, python-api, python-fastapi, dash, streamlit. Requires R + renv + rsconnect (>= 0.8.15) for R content, or Python + uv + rsconnect-python for Python content.
+description: Posit Connect deployment workflows for R and Python. Use only for Connect/rsconnect/manifest.json/renv/requirements/uv deployment issues, git-backed content, version upgrades, and bundle errors.
 license: MIT
+compatibility: Requires R + renv + rsconnect (>= 0.8.15) for R content, or Python 3.10+ + uv + rsconnect-python for Python content.
 metadata:
   author: clssck
   version: "2.0.0"
@@ -278,6 +279,7 @@ python $SKILL_DIR/scripts/<script>.py
 ### Content Type Detection
 
 The `regenerate_manifest_py.py` script auto-detects your framework:
+It scans common entrypoints in the project root, `src/`, and importable package directories (plus pyproject entry points).
 
 | Framework | Detected By | rsconnect Type |
 |-----------|-------------|----------------|

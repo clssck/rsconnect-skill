@@ -132,11 +132,16 @@ if manifest_version and local_version:
     if manifest_version == local_version:
         print(f"{SYM_CHECK} {local_version} (exact match)")
     else:
-        # Compare major.minor only (patch differences are usually OK)
         manifest_mm = ".".join(manifest_version.split(".")[:2])
         local_mm = ".".join(local_version.split(".")[:2])
         if manifest_mm == local_mm:
-            print(f"{SYM_CHECK} {local_version} (manifest: {manifest_version})")
+            print(
+                f"{SYM_WARN} Local {local_version} vs manifest {manifest_version} (patch mismatch)"
+            )
+            warnings.append(
+                f"Python patch mismatch (local {local_version} vs manifest {manifest_version}) — "
+                "Posit Connect requires an exact patch version; update .python-version and regenerate manifest"
+            )
         else:
             print(f"{SYM_WARN} Local {local_version} vs manifest {manifest_version}")
             warnings.append(

@@ -31,6 +31,12 @@ if (file.exists(utils_path)) {
     }
     unique(pkgs)
   }
+  skill_script_path <- function(script_name, from_dir = NULL) {
+    if (is.null(from_dir)) {
+      from_dir <- script_dir
+    }
+    file.path(from_dir, script_name)
+  }
 }
 
 # Check what's staged for commit

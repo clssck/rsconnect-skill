@@ -212,7 +212,7 @@ git commit --no-verify
 2. `requirements.txt` exists (with package count)
 3. `uv` is installed
 4. `rsconnect-python` is installed (or uvx available as fallback)
-5. Python version in manifest matches local (major.minor comparison)
+5. Python version in manifest matches local (warns on patch mismatch; Connect requires exact version)
 6. Manifest freshness (newer than requirements.txt)
 7. `allow_uv` field present in manifest (informational)
 
@@ -268,7 +268,7 @@ python $SKILL_DIR/scripts/diagnose_py.py --help
 **Purpose:** Regenerate `manifest.json` for Python Git-backed deployment.
 
 **What it does:**
-1. Detects content type from project files (FastAPI, Flask, Dash, etc.)
+1. Detects content type from project files (root/src/package entrypoints for FastAPI, Flask, Dash, etc.)
 2. Exports `requirements.txt` via `uv export --no-hashes`
 3. Runs `rsconnect write-manifest <type> . --overwrite`
 4. Patches `allow_uv: true` into manifest.json
