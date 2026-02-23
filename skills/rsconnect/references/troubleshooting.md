@@ -211,6 +211,11 @@ grep "package-name" requirements.txt
 python $SKILL_DIR/scripts/regenerate_manifest_py.py
 ```
 
+```powershell
+# Verify the package is listed
+Select-String -Path requirements.txt -Pattern "package-name"
+```
+
 ### `allow_uv` not set in manifest
 
 **Symptom:** Connect installs packages slowly using pip instead of uv.
@@ -268,6 +273,12 @@ rsconnect write-manifest api .
 
 # Option 2: Disable verification (NOT recommended for production)
 rsconnect write-manifest api . --insecure
+```
+
+```powershell
+# Option 1: Point to your CA bundle
+$env:REQUESTS_CA_BUNDLE = "C:\path\to\ca-bundle.crt"
+rsconnect write-manifest api .
 ```
 
 ---

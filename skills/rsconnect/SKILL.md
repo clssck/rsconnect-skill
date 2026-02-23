@@ -55,6 +55,13 @@ echo ".claude/" >> .gitignore
 
 ---
 
+## Windows Notes
+- Prefer PowerShell or Git Bash/WSL for command execution.
+- If `python` is not on PATH, use `py -3` (Python launcher).
+- If `Rscript` is not on PATH, use `Rscript.exe`.
+- Install uv with PowerShell: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`.
+
+
 # R Deployment
 
 ## Quick Start (R)
@@ -134,6 +141,17 @@ Rscript $SKILL_DIR/scripts/precommit_check.R
 EOF
 chmod +x .git/hooks/pre-commit
 ```
+
+```powershell
+# PowerShell (Windows)
+# Replace $SKILL_DIR with your actual skill path
+@'
+#!/usr/bin/env pwsh
+& Rscript $SKILL_DIR/scripts/precommit_check.R
+exit $LASTEXITCODE
+'@ | Set-Content .git/hooks/pre-commit
+```
+Note: Requires PowerShell 7+ (`pwsh`). If unavailable, run the bash snippet in Git Bash or WSL.
 
 The hook checks:
 - No `Source: unknown` packages in staged `renv.lock`
@@ -224,7 +242,7 @@ Before doing anything else, run the Python pre-deploy check:
 python $SKILL_DIR/scripts/pre_deploy_check_py.py
 ```
 
-This reports: Python version, uv/rsconnect status, manifest status, requirements.txt sync, and allow_uv setting. Use the output to inform your response.
+This reports: Python version, uv/rsconnect status, pyproject.toml presence, manifest status, requirements.txt sync, and allow_uv setting. Use the output to inform your response.
 
 ---
 
@@ -254,6 +272,8 @@ rsconnect write-manifest <type> .           # Update manifest.json
 | Sync environment | `uv sync` |
 | Export for Connect | `uv export --no-hashes -o requirements.txt` |
 | Run a tool | `uvx <tool>` (e.g., `uvx rsconnect-python`) |
+
+`uv export` requires `pyproject.toml`. If it's missing, `regenerate_manifest_py.py` can create a minimal one, but review it before committing.
 
 ### What is `allow_uv`?
 
@@ -430,6 +450,7 @@ Each Connect server points to a different branch. Merge up through environments:
 ### Python Projects
 - [ ] Run `python $SKILL_DIR/scripts/pre_deploy_check_py.py`
 - [ ] requirements.txt is up to date
+- [ ] `pyproject.toml` exists (required for uv export)
 - [ ] Manifest is up to date
 - [ ] `allow_uv: true` in manifest (recommended)
 - [ ] `.rscignore` excludes dev artifacts (`.venv/`, `__pycache__/`, etc.)

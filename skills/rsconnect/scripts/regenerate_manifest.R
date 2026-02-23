@@ -6,10 +6,8 @@ script_dir <- dirname(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), v
 if (length(script_dir) == 0 || is.na(script_dir)) script_dir <- "."
 source(file.path(script_dir, "lib", "parse_utils.R"))
 
-# Increase file limit to handle large applications (default is 1000)
+# Increase file limit to handle large applications without lowering newer defaults
 # Typical Shiny apps with renv can have 2000-4000 files
-options(rsconnect.max.bundle.files = 5000)
-
 box_header("REGENERATE MANIFEST")
 
 # Check rsconnect is available
@@ -19,8 +17,17 @@ if (!requireNamespace("rsconnect", quietly = TRUE)) {
   quit(status = 1)
 }
 
-cat("rsconnect version:", as.character(packageVersion("rsconnect")), "\n")
-cat("Bundle file limit:", getOption("rsconnect.max.bundle.files"), "\n\n")
+rsconnect_ver <- packageVersion("rsconnect")
+current_limit <- getOption("rsconnect.max.bundle.files")
+default_limit <- if (rsconnect_ver >= package_version("1.6.0")) 10000 else 1000
+effective_limit <- if (is.null(current_limit) || is.na(current_limit)) default_limit else current_limit
+if (effective_limit < 5000) {
+  options(rsconnect.max.bundle.files = 5000)
+  effective_limit <- 5000
+}
+
+cat("rsconnect version:", as.character(rsconnect_ver), "\n")
+cat("Bundle file limit:", effective_limit, "\n\n")
 
 cat("Generating manifest.json... ")
 

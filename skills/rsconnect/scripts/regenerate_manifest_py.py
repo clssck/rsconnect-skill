@@ -207,7 +207,7 @@ def detect_content_type() -> str | None:
 
     for entrypoint in candidate_paths:
         try:
-            with open(entrypoint) as f:
+            with open(entrypoint, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
         except OSError:
             continue
@@ -292,13 +292,27 @@ def main() -> None:
         sys.exit(1)
 
     # Determine target Python version from .python-version or current interpreter
+    raw_pv = get_python_version_file()
     target_python = get_local_python_version()
 
-    # Warn if .python-version uses a short version (e.g. 3.13 instead of 3.13.6)
-    raw_pv = get_python_version_file()
+    # Ensure exact patch version for Connect; use interpreter when it matches
     if raw_pv and not is_exact_python_version(raw_pv):
-        print(f"{SYM_WARN} .python-version says '{raw_pv}' — needs exact major.minor.patch")
-        print(f"  Set to the version on your Connect server (e.g. {raw_pv}.6)")
+        interp_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        raw_mm = ".".join(raw_pv.split(".")[:2])
+        interp_mm = f"{sys.version_info.major}.{sys.version_info.minor}"
+        if raw_mm == interp_mm:
+            target_python = interp_version
+            print(
+                f"{SYM_WARN} .python-version says '{raw_pv}' — using interpreter {interp_version} (exact)"
+            )
+            print("  Update .python-version to the exact patch version on your Connect server")
+        else:
+            print(
+                f"{SYM_CROSS} .python-version says '{raw_pv}' but interpreter is {interp_version}"
+            )
+            print("  Set .python-version to an exact patch version installed on your Connect server")
+            sys.exit(1)
+
 
     # Build rsconnect command — use uvx --python to ensure the manifest
     # gets stamped with the correct Python version (matching .python-version).

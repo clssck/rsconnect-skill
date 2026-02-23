@@ -56,6 +56,18 @@ cp -r skills/rsconnect/ /path/to/your-project/.github/skills/rsconnect/
 cp -r skills/rsconnect/ /path/to/your-project/<agent-skills-dir>/rsconnect/
 ```
 
+```powershell
+# PowerShell (Windows)
+# Cursor
+Copy-Item -Recurse -Force skills/rsconnect/ C:\path\to\your-project\.cursor\skills\rsconnect\
+# Claude Code
+Copy-Item -Recurse -Force skills/rsconnect/ C:\path\to\your-project\.claude\skills\rsconnect\
+# Copilot (or any agent using .github/)
+Copy-Item -Recurse -Force skills/rsconnect/ C:\path\to\your-project\.github\skills\rsconnect\
+# Generic — adapt the path to your agent's convention
+Copy-Item -Recurse -Force skills/rsconnect/ C:\path\to\your-project\<agent-skills-dir>\rsconnect\
+```
+
 After installation, your project should have:
 
 ```
@@ -112,6 +124,12 @@ Rscript $SKILL_DIR/scripts/<script>.R
 python $SKILL_DIR/scripts/<script>.py
 ```
 
+```powershell
+# PowerShell (Windows)
+Rscript.exe $SKILL_DIR/scripts/<script>.R
+py -3 $SKILL_DIR/scripts/<script>.py
+```
+
 ### Pre-commit Hook
 
 Validates R deployment files before each commit:
@@ -124,6 +142,19 @@ Rscript $SKILL_DIR/scripts/precommit_check.R
 EOF
 chmod +x .git/hooks/pre-commit
 ```
+
+```powershell
+# PowerShell (Windows)
+# Replace $SKILL_DIR with your actual skill path
+@'
+#!/usr/bin/env pwsh
+& Rscript $SKILL_DIR/scripts/precommit_check.R
+exit $LASTEXITCODE
+'@ | Set-Content .git/hooks/pre-commit
+```
+
+Note: Requires PowerShell 7+ (`pwsh`). If unavailable, run the bash snippet in Git Bash or WSL.
+
 
 ### References
 

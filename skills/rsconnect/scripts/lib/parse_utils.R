@@ -257,8 +257,24 @@ check_skill_dir_gitignored <- function(from_dir = NULL) {
   lines <- trimws(lines)
   patterns <- c(agent_dir, paste0(agent_dir, "/"),
                 paste0("/", agent_dir), paste0("/", agent_dir, "/"))
+  agent_pattern <- gsub("([\\\\.\\+\\*\\?\\^\\$\\(\\)\\[\\]\\{\\}\\|])", "\\\\\\1", agent_dir)
+  regex <- paste0("(^|.*/)", agent_pattern, "(/|$)")
 
-  if (any(lines %in% patterns)) {
+  matches <- vapply(lines, function(line) {
+    if (line == "" || startsWith(line, "#") || startsWith(line, "!")) {
+      return(FALSE)
+    }
+    if (line %in% patterns) {
+      return(TRUE)
+    }
+    normalized <- sub("/+$", "", line)
+    if (normalized %in% c(agent_dir, paste0("/", agent_dir))) {
+      return(TRUE)
+    }
+    grepl(regex, line)
+  }, logical(1))
+
+  if (any(matches)) {
     return(list(ignored = TRUE, agent_dir = agent_dir))
   }
 

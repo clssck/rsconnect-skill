@@ -2,6 +2,8 @@
 
 Run all scripts from the project root directory.
 
+Windows: use PowerShell and `Rscript.exe`/`py -3` if `Rscript`/`python` are not on PATH.
+
 ## Quick Reference
 
 ### R Scripts
@@ -182,6 +184,17 @@ EOF
 chmod +x .git/hooks/pre-commit
 ```
 
+```powershell
+# PowerShell (Windows)
+# Replace $SKILL_DIR with your actual skill path
+@'
+#!/usr/bin/env pwsh
+& Rscript $SKILL_DIR/scripts/precommit_check.R
+exit $LASTEXITCODE
+'@ | Set-Content .git/hooks/pre-commit
+```
+Note: Requires PowerShell 7+ (`pwsh`). If unavailable, run the bash snippet in Git Bash or WSL.
+
 **Usage:**
 The hook runs automatically on `git commit` when renv.lock or manifest.json are staged.
 
@@ -209,12 +222,13 @@ git commit --no-verify
 
 **Checks:**
 1. `manifest.json` exists
-2. `requirements.txt` exists (with package count)
-3. `uv` is installed
-4. `rsconnect-python` is installed (or uvx available as fallback)
-5. Python version in manifest matches local (warns on patch mismatch; Connect requires exact version)
-6. Manifest freshness (newer than requirements.txt)
-7. `allow_uv` field present in manifest (informational)
+2. `pyproject.toml` exists (required for uv; regenerate_manifest_py can create a minimal one)
+3. `requirements.txt` exists (with package count)
+4. `uv` is installed
+5. `rsconnect-python` is installed (or uvx available as fallback)
+6. Python version in manifest matches local (warns on patch mismatch; Connect requires exact version)
+7. Manifest freshness (newer than requirements.txt)
+8. `allow_uv` field present in manifest (informational)
 
 **Usage:**
 ```bash
@@ -269,11 +283,12 @@ python $SKILL_DIR/scripts/diagnose_py.py --help
 
 **What it does:**
 1. Detects content type from project files (root/src/package entrypoints for FastAPI, Flask, Dash, etc.)
-2. Exports `requirements.txt` via `uv export --no-hashes`
-3. Runs `rsconnect write-manifest <type> . --overwrite`
-4. Patches `allow_uv: true` into manifest.json
-5. Verifies manifest was created
-6. Reports success with next steps
+2. Ensures `pyproject.toml` exists (creates a minimal one if missing for uv export)
+3. Exports `requirements.txt` via `uv export --no-hashes`
+4. Runs `rsconnect write-manifest <type> . --overwrite`
+5. Patches `allow_uv: true` into manifest.json
+6. Verifies manifest was created
+7. Reports success with next steps
 
 **Usage:**
 ```bash

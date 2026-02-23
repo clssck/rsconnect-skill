@@ -13,6 +13,13 @@ import sys
 # Add lib/ to path for shared utilities
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
 
+UV_INSTALL_HINT = (
+    "Install uv: powershell -ExecutionPolicy ByPass -c \"irm https://astral.sh/uv/install.ps1 | iex\""
+    if sys.platform == "win32"
+    else "Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh"
+)
+
+
 from py_utils import (
     SYM_CHECK,
     SYM_CROSS,
@@ -86,7 +93,7 @@ if check_command("uv"):
     print(f"{SYM_CHECK} Found")
 else:
     print(f"{SYM_CROSS} NOT FOUND")
-    issues.append("Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh")
+    issues.append(UV_INSTALL_HINT)
     passed = False
 
 # Check 5: rsconnect-python is available

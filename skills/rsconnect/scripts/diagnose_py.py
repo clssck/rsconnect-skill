@@ -13,6 +13,13 @@ import sys
 # Add lib/ to path for shared utilities
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
 
+UV_INSTALL_HINT = (
+    "uv not installed — install: powershell -ExecutionPolicy ByPass -c \"irm https://astral.sh/uv/install.ps1 | iex\""
+    if sys.platform == "win32"
+    else "uv not installed — install: curl -LsSf https://astral.sh/uv/install.sh | sh"
+)
+
+
 from py_utils import (
     SYM_CHECK,
     SYM_CROSS,
@@ -85,7 +92,7 @@ if check_command("uv"):
         print(f"uv: installed (couldn't get version)")
 else:
     print("uv: NOT INSTALLED")
-    issues.append("uv not installed — install: curl -LsSf https://astral.sh/uv/install.sh | sh")
+    issues.append(UV_INSTALL_HINT)
 
 # rsconnect-python version
 if check_command("rsconnect"):
@@ -160,10 +167,6 @@ if os.path.exists("manifest.json"):
         print(f"allow_uv: {SYM_WARN} explicitly disabled")
     else:
         print(f"allow_uv: {SYM_WARN} not set (server default)")
-        issues.append(
-            "allow_uv not set in manifest — "
-            f"run: python {skill_script_path('regenerate_manifest_py.py')}"
-        )
 
     # Version match check
     if manifest_py_ver and local_version:

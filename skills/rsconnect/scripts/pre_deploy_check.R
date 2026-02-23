@@ -63,7 +63,9 @@ if (file.exists("renv.lock")) {
     passed <- FALSE
   }
 } else {
-  cat("? renv.lock not found (not using renv?)\n")
+  cat(SYM_CROSS, "renv.lock missing\n")
+  issues <- c(issues, "renv.lock missing — run renv::init() to create one")
+  passed <- FALSE
 }
 
 # Check 4: renv.lock and manifest.json in sync (with NA handling)

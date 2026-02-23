@@ -10,6 +10,7 @@ Mirrors the patterns from parse_utils.R:
 
 import io
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -232,10 +233,18 @@ def check_skill_dir_gitignored() -> tuple[bool, str | None]:
         return False, agent_dir
 
     gitignore_content = gitignore_path.read_text()
-    # Check for the directory with or without trailing slash
+    agent_pattern = re.compile(rf"(^|.*/){re.escape(agent_dir)}(/|$)")
+    # Check for the directory with or without trailing slash or common glob patterns
     for line in gitignore_content.splitlines():
         line = line.strip()
+        if not line or line.startswith("#") or line.startswith("!"):
+            continue
         if line in (agent_dir, agent_dir + "/", f"/{agent_dir}", f"/{agent_dir}/"):
+            return True, agent_dir
+        normalized = line.rstrip("/")
+        if normalized in (agent_dir, f"/{agent_dir}"):
+            return True, agent_dir
+        if agent_pattern.search(line):
             return True, agent_dir
 
     return False, agent_dir

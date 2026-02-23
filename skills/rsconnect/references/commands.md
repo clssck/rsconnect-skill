@@ -25,6 +25,17 @@ EOF
 chmod +x .git/hooks/pre-commit
 ```
 
+```powershell
+# PowerShell (Windows)
+# Replace $SKILL_DIR with your actual skill path
+@'
+#!/usr/bin/env pwsh
+& Rscript $SKILL_DIR/scripts/precommit_check.R
+exit $LASTEXITCODE
+'@ | Set-Content .git/hooks/pre-commit
+```
+Note: Requires PowerShell 7+ (`pwsh`). If unavailable, run the bash snippet in Git Bash or WSL.
+
 ## R Commands
 
 ```r
@@ -94,6 +105,16 @@ grep -c '"Source": "unknown"' renv.lock
 
 # Full deploy prep
 R -q -e 'renv::snapshot()' && Rscript $SKILL_DIR/scripts/regenerate_manifest.R
+```
+
+## R PowerShell One-liners
+```powershell
+# Check for Source:unknown
+Select-String -Path renv.lock -Pattern '"Source": "unknown"'
+# Count Source:unknown packages
+(Select-String -Path renv.lock -Pattern '"Source": "unknown"' | Measure-Object).Count
+# Full deploy prep
+R -q -e 'renv::snapshot()'; Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 ```
 
 ---
@@ -205,4 +226,14 @@ python -c "import json; m=json.load(open('manifest.json')); print(m.get('python'
 
 # Count packages in requirements.txt
 grep -cv '^\s*$\|^\s*#\|^-' requirements.txt
+```
+
+## Python PowerShell One-liners
+```powershell
+# Check Python version in manifest
+python -c "import json; print(json.load(open('manifest.json')).get('python', {}).get('version', 'not set'))"
+# Check allow_uv status
+python -c "import json; m=json.load(open('manifest.json')); print(m.get('python',{}).get('package_manager',{}).get('allow_uv', 'not set'))"
+# Count packages in requirements.txt
+(Get-Content requirements.txt | Where-Object { $_ -notmatch '^\s*$|^\s*#|^\s*-' } | Measure-Object).Count
 ```
