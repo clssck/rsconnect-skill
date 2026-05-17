@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires R + renv + rsconnect (>= 0.8.15) for R content, or Python 3.10+ + uv + rsconnect-python for Python content.
 metadata:
   author: clssck
-  version: "2.0.0"
+  version: "2.0.1"
 ---
 
 # Posit Connect Deployment Guide
@@ -134,22 +134,24 @@ Rscript $SKILL_DIR/scripts/<script>.R
 Automatically validate deployment files before each commit:
 
 ```bash
-# Install the pre-commit hook
-cat > .git/hooks/pre-commit << 'EOF'
+# Replace this with your installed skill path
+SKILL_DIR="/path/to/your-project/.cursor/skills/rsconnect"
+cat > .git/hooks/pre-commit << EOF
 #!/bin/bash
-Rscript $SKILL_DIR/scripts/precommit_check.R
+Rscript "$SKILL_DIR/scripts/precommit_check.R"
 EOF
 chmod +x .git/hooks/pre-commit
 ```
 
 ```powershell
 # PowerShell (Windows)
-# Replace $SKILL_DIR with your actual skill path
-@'
+# Replace this with your installed skill path
+$SkillDir = "C:\path\to\your-project\.cursor\skills\rsconnect"
+@"
 #!/usr/bin/env pwsh
-& Rscript $SKILL_DIR/scripts/precommit_check.R
+& Rscript "$SkillDir/scripts/precommit_check.R"
 exit $LASTEXITCODE
-'@ | Set-Content .git/hooks/pre-commit
+"@ | Set-Content .git/hooks/pre-commit
 ```
 Note: Requires PowerShell 7+ (`pwsh`). If unavailable, run the bash snippet in Git Bash or WSL.
 

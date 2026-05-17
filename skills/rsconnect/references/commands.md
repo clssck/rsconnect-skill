@@ -18,21 +18,24 @@ Rscript $SKILL_DIR/scripts/fix_unknown_sources.R
 Rscript $SKILL_DIR/scripts/regenerate_manifest.R
 
 # Install pre-commit hook (validates deployment files before commit)
-cat > .git/hooks/pre-commit << 'EOF'
+# Replace this with your installed skill path
+SKILL_DIR="/path/to/your-project/.cursor/skills/rsconnect"
+cat > .git/hooks/pre-commit << EOF
 #!/bin/bash
-Rscript $SKILL_DIR/scripts/precommit_check.R
+Rscript "$SKILL_DIR/scripts/precommit_check.R"
 EOF
 chmod +x .git/hooks/pre-commit
 ```
 
 ```powershell
 # PowerShell (Windows)
-# Replace $SKILL_DIR with your actual skill path
-@'
+# Replace this with your installed skill path
+$SkillDir = "C:\path\to\your-project\.cursor\skills\rsconnect"
+@"
 #!/usr/bin/env pwsh
-& Rscript $SKILL_DIR/scripts/precommit_check.R
+& Rscript "$SkillDir/scripts/precommit_check.R"
 exit $LASTEXITCODE
-'@ | Set-Content .git/hooks/pre-commit
+"@ | Set-Content .git/hooks/pre-commit
 ```
 Note: Requires PowerShell 7+ (`pwsh`). If unavailable, run the bash snippet in Git Bash or WSL.
 

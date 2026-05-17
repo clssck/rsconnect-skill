@@ -108,7 +108,7 @@ R scripts share a common utility library (`scripts/lib/parse_utils.R`) for consi
 
 | Script | Purpose | Flags |
 |--------|---------|-------|
-| `pre_deploy_check_py.py` | Validate Python deployment readiness (7 checks) | |
+| `pre_deploy_check_py.py` | Validate Python deployment readiness (9 checks) | |
 | `diagnose_py.py` | Full Python diagnostics report | `--verbose`, `--help` |
 | `regenerate_manifest_py.py` | Regenerate manifest for Python apps | `--type`, `--no-uv-export`, `--no-allow-uv` |
 
@@ -135,22 +135,24 @@ py -3 $SKILL_DIR/scripts/<script>.py
 Validates R deployment files before each commit:
 
 ```bash
-# Replace $SKILL_DIR with your actual skill path
-cat > .git/hooks/pre-commit << 'EOF'
+# Replace this with your installed skill path
+SKILL_DIR="/path/to/your-project/.cursor/skills/rsconnect"
+cat > .git/hooks/pre-commit << EOF
 #!/bin/bash
-Rscript $SKILL_DIR/scripts/precommit_check.R
+Rscript "$SKILL_DIR/scripts/precommit_check.R"
 EOF
 chmod +x .git/hooks/pre-commit
 ```
 
 ```powershell
 # PowerShell (Windows)
-# Replace $SKILL_DIR with your actual skill path
-@'
+# Replace this with your installed skill path
+$SkillDir = "C:\path\to\your-project\.cursor\skills\rsconnect"
+@"
 #!/usr/bin/env pwsh
-& Rscript $SKILL_DIR/scripts/precommit_check.R
+& Rscript "$SkillDir/scripts/precommit_check.R"
 exit $LASTEXITCODE
-'@ | Set-Content .git/hooks/pre-commit
+"@ | Set-Content .git/hooks/pre-commit
 ```
 
 Note: Requires PowerShell 7+ (`pwsh`). If unavailable, run the bash snippet in Git Bash or WSL.
